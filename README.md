@@ -183,6 +183,16 @@ dotnet test /p:CollectCoverage=true
 - ✅ Edge cases (empty dice, invalid combinations)
 - ✅ Bonus calculations
 - ✅ Available categories logic
+- ✅ 28 unit tests, all passing
+
+### UI Testing
+
+For UI and end-to-end testing guidance, see [Tests/UI-TESTING-GUIDE.md](Tests/UI-TESTING-GUIDE.md).
+
+Recommended approach:
+- **Unit Tests** (implemented): Test business logic and scoring rules
+- **E2E Tests** (recommended): Use Playwright for complete user workflows
+- **Manual Testing**: Use the provided checklist for UI validation
 
 ## 🎓 Learning Resources
 
