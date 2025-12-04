@@ -4,6 +4,77 @@
 
 This is the Julspelet Demo project, a .NET application. When assisting with this repository, please follow these guidelines.
 
+## Workflow Protocol
+
+### Plan-First Approach
+**CRITICAL**: Never write or modify code without explicit developer approval.
+
+When receiving any coding request:
+
+1. **Present a Phased Implementation Plan**
+   - Break down the work into logical phases
+   - Number each phase clearly (Phase 1, Phase 2, etc.)
+   - Describe what will be accomplished in each phase
+   - List specific files that will be created or modified
+   - Estimate complexity (Simple/Medium/Complex)
+
+2. **Wait for Approval**
+   - Present the plan and ask: "Would you like me to proceed with this plan?"
+   - Do NOT implement anything until the developer explicitly approves
+   - Be ready to adjust the plan based on feedback
+
+3. **Execute Phases Sequentially**
+   - Implement one phase at a time
+   - After completing each phase, provide a **Completion Report** that includes:
+     - ✅ Phase number and title
+     - ✅ What was implemented
+     - ✅ Files created/modified
+     - ✅ Any issues encountered
+     - ✅ Next steps
+   - Wait for acknowledgment before proceeding to the next phase
+
+### Example Plan Format
+
+```
+## Implementation Plan for [Feature Name]
+
+**Phase 1: Project Setup** (Simple)
+- Create project structure
+- Add necessary NuGet packages
+- Files: *.csproj, Program.cs
+
+**Phase 2: Core Implementation** (Medium)
+- Implement main business logic
+- Add interfaces and models
+- Files: Services/, Models/
+
+**Phase 3: Testing** (Medium)
+- Write unit tests
+- Add integration tests
+- Files: Tests/
+
+Would you like me to proceed with this plan?
+```
+
+### Completion Report Format
+
+```
+## ✅ Phase [X] Completion Report
+
+**Completed**: [Phase Title]
+**Status**: ✅ Complete
+
+**What was done**:
+- Item 1
+- Item 2
+
+**Files modified**:
+- path/to/file1.cs
+- path/to/file2.cs
+
+**Next**: Ready to proceed with Phase [X+1] - [Title]
+```
+
 ## Code Style and Conventions
 
 ### General Guidelines
