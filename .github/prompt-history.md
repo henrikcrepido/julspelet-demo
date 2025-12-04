@@ -43,13 +43,30 @@ This file tracks the key prompts and requirements given during the development o
 - Added requirement that users join by entering their name
 - Updated application requirements in copilot instructions
 
+### 8. Game Type and Rules
+**Request**: "the game is a yatzy tournament. only 1 rounds. 3 throw of dice for each user. resulting in a scoreboard"
+- Specified game type as Yatzy tournament
+- Single round format
+- 3 throws of dice per player per turn
+- Scoreboard to display results
+- Updated application requirements with game rules
+
+### 9. UI Theme
+**Request**: "i want a christmas theme"
+- Added Christmas theme requirement for UI and styling
+- Updated MudBlazor guidelines to include festive colors and holiday styling
+
 ---
 
 ## Requirements Summary
 
 ### Application Type
-- Multiplayer game for 2 or more players
+- Yatzy tournament game for 2 or more players
+- Single round format
 - Users join by entering their name
+- Each player gets 3 throws of dice per turn
+- Scoreboard displays results
+- Christmas theme for UI and styling
 - Built with .NET Core 9 Blazor Server
 - UI using MudBlazor component library
 

@@ -5,13 +5,16 @@
 This is the Julspelet Demo project, a .NET Core 9 Blazor Server application using MudBlazor for the UI component library. When assisting with this repository, please follow these guidelines.
 
 ### Application Requirements
-This is a multiplayer game application with the following characteristics:
+This is a multiplayer Yatzy tournament game application with the following characteristics:
 - Supports 2 or more players
 - Users join the game by entering their name
-- Interactive gameplay between multiple participants
-- Real-time or turn-based game mechanics
+- Single round tournament format
+- Each player gets 3 throws of dice per turn
+- Scoreboard displays results
+- Turn-based gameplay
 - Player state management and tracking
 - Game session handling
+- Christmas theme for UI and styling
 
 ### Developer Context
 **Learning Journey**: The developer is experienced with .NET Core backend development but new to Blazor. When providing assistance:
@@ -124,6 +127,7 @@ Would you like me to proceed with this plan?
 - Prefer MudBlazor components over native HTML/Blazor components for UI consistency
 - Use MudBlazor components: MudButton, MudTextField, MudDialog, MudTable, MudCard, etc.
 - Follow MudBlazor theming and styling conventions
+- Apply Christmas theme (festive colors, winter motifs, holiday styling)
 - Leverage MudBlazor's built-in form validation with MudForm
 - Use MudBlazor layout components (MudAppBar, MudDrawer, MudMainContent)
 - Reference MudBlazor documentation when introducing new components
