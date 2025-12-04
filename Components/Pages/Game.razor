@@ -441,15 +441,22 @@
     /// <summary>
     /// Subscribes to game state changes when component initializes.
     /// This ensures the UI updates automatically when the game state changes.
-    /// Also redirects to home if no game is in progress.
     /// </summary>
     protected override void OnInitialized()
     {
-        if (!GameService.GameState.IsGameStarted)
+        GameService.OnGameStateChanged += StateHasChanged;
+    }
+
+    /// <summary>
+    /// Checks if game is started after first render and redirects if needed.
+    /// Using OnAfterRender ensures the game state is properly set before checking.
+    /// </summary>
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender && !GameService.GameState.IsGameStarted)
         {
             Navigation.NavigateTo("/");
         }
-        GameService.OnGameStateChanged += StateHasChanged;
     }
 
     /// <summary>
