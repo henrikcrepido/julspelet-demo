@@ -1,0 +1,267 @@
+@page "/game"
+@using Julspelet.Services
+@using Julspelet.Models
+@inject GameService GameService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+@implements IDisposable
+
+@* 
+    Game Component - Main gameplay page for Yatzy
+    Handles dice rolling, holding dice, scoring, and turn progression.
+    Demonstrates Blazor's component lifecycle and state management.
+*@
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    @if (!GameService.GameState.IsGameStarted)
+    {
+        @* Redirect to home if game hasn't started *@
+        <MudAlert Severity="Severity.Warning" Class="mb-4">
+            No game in progress. Redirecting to player setup...
+        </MudAlert>
+    }
+    else if (GameService.GameState.IsGameComplete)
+    {
+        @* Game Over Screen *@
+        <MudPaper Elevation="3" Class="pa-6 text-center">
+            <MudText Typo="Typo.h3" Color="Color.Success" Class="mb-4">
+                🎄 Game Over! 🎅
+            </MudText>
+            
+            @{
+                var winners = GameService.GameState.GetWinners();
+                if (winners.Count == 1)
+                {
+                    <MudText Typo="Typo.h4" Class="mb-4">
+                        🏆 Winner: @winners[0].Name with @winners[0].TotalScore points! 🏆
+                    </MudText>
+                }
+                else
+                {
+                    <MudText Typo="Typo.h4" Class="mb-4">
+                        🏆 It's a tie! 🏆
+                    </MudText>
+                    <MudText Typo="Typo.h6" Class="mb-4">
+                        Winners: @string.Join(", ", winners.Select(w => w.Name)) with @winners[0].TotalScore points each!
+                    </MudText>
+                }
+            }
+
+            <MudButton Variant="Variant.Filled" 
+                       Color="Color.Primary" 
+                       Size="Size.Large"
+                       OnClick="NewGame"
+                       StartIcon="@Icons.Material.Filled.Refresh">
+                New Game
+            </MudButton>
+        </MudPaper>
+    }
+    else
+    {
+        @* Main Game Interface *@
+        <MudGrid>
+            @* Left Column - Game Area *@
+            <MudItem xs="12" md="8">
+                @* Current Player Info *@
+                <MudPaper Elevation="3" Class="pa-4 mb-4">
+                    <MudText Typo="Typo.h5" Color="Color.Primary">
+                        Current Turn: @GameService.GameState.GetCurrentPlayer()?.Name
+                    </MudText>
+                    <MudText Typo="Typo.body1" Color="Color.Secondary">
+                        Roll @GameService.GameState.RollsThisTurn of @GameState.MaxRollsPerTurn
+                    </MudText>
+                </MudPaper>
+
+                @* Dice Display *@
+                <MudPaper Elevation="3" Class="pa-6 mb-4">
+                    <MudText Typo="Typo.h6" Class="mb-4 text-center">Dice</MudText>
+                    
+                    <div class="dice-container">
+                        @for (int i = 0; i < GameService.GameState.DiceSet.Dice.Count; i++)
+                        {
+                            var index = i; // Capture for lambda
+                            var die = GameService.GameState.DiceSet.Dice[i];
+                            var canHold = GameService.GameState.RollsThisTurn > 0 && 
+                                         GameService.GameState.RollsThisTurn < GameState.MaxRollsPerTurn;
+
+                            <div class="dice-wrapper">
+                                <MudPaper Elevation="@(die.IsHeld ? 8 : 2)" 
+                                          Class="@GetDiceClass(die)"
+                                          @onclick="@(() => ToggleDie(index))"
+                                          Style="@(canHold ? "cursor: pointer;" : "cursor: default;")">
+                                    <div class="dice-value">
+                                        @GetDiceEmoji(die.Value)
+                                    </div>
+                                </MudPaper>
+                                @if (die.IsHeld)
+                                {
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Warning" Class="mt-2">Held</MudChip>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    @if (GameService.GameState.RollsThisTurn > 0)
+                    {
+                        <MudText Typo="Typo.caption" Class="text-center mt-3" Color="Color.Info">
+                            Click on dice to hold them before your next roll
+                        </MudText>
+                    }
+                </MudPaper>
+
+                @* Action Buttons *@
+                <MudPaper Elevation="3" Class="pa-4">
+                    <div class="d-flex gap-3">
+                        <MudButton Variant="Variant.Filled" 
+                                   Color="Color.Primary" 
+                                   Size="Size.Large"
+                                   FullWidth="true"
+                                   OnClick="RollDice"
+                                   Disabled="!GameService.GameState.CanRoll()"
+                                   StartIcon="@Icons.Material.Filled.Casino">
+                            @(GameService.GameState.RollsThisTurn == 0 ? "Start Turn" : "Roll Again")
+                        </MudButton>
+                    </div>
+                    
+                    @if (!GameService.GameState.CanRoll() && GameService.GameState.RollsThisTurn > 0)
+                    {
+                        <MudAlert Severity="Severity.Info" Class="mt-3">
+                            No more rolls! Choose a category to score.
+                        </MudAlert>
+                    }
+                </MudPaper>
+            </MudItem>
+
+            @* Right Column - Scorecard Placeholder *@
+            <MudItem xs="12" md="4">
+                <MudPaper Elevation="3" Class="pa-4">
+                    <MudText Typo="Typo.h6" Class="mb-3">Scorecard</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        Scoring interface will be added in Phase 2
+                    </MudText>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    }
+</MudContainer>
+
+<style>
+    .dice-container {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin: 1rem 0;
+    }
+
+    .dice-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .dice {
+        width: 80px;
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .dice-held {
+        background: #fff3cd !important;
+        border: 3px solid #ffc107;
+    }
+
+    .dice:hover {
+        transform: scale(1.05);
+    }
+
+    .dice-value {
+        font-size: 3rem;
+        user-select: none;
+    }
+</style>
+
+@code {
+    /// <summary>
+    /// Subscribes to game state changes when component initializes.
+    /// This ensures the UI updates automatically when the game state changes.
+    /// Also redirects to home if no game is in progress.
+    /// </summary>
+    protected override void OnInitialized()
+    {
+        if (!GameService.GameState.IsGameStarted)
+        {
+            Navigation.NavigateTo("/");
+        }
+        GameService.OnGameStateChanged += StateHasChanged;
+    }
+
+    /// <summary>
+    /// Unsubscribes from events when component is disposed to prevent memory leaks.
+    /// </summary>
+    public void Dispose()
+    {
+        GameService.OnGameStateChanged -= StateHasChanged;
+    }
+
+    /// <summary>
+    /// Rolls the dice for the current turn.
+    /// </summary>
+    private void RollDice()
+    {
+        GameService.RollDice();
+    }
+
+    /// <summary>
+    /// Toggles the hold state of a die.
+    /// </summary>
+    private void ToggleDie(int index)
+    {
+        // Can only hold dice after first roll and before last roll is complete
+        if (GameService.GameState.RollsThisTurn > 0 && 
+            GameService.GameState.RollsThisTurn < GameState.MaxRollsPerTurn)
+        {
+            GameService.ToggleDieHold(index);
+        }
+    }
+
+    /// <summary>
+    /// Gets the CSS class for a die based on its held state.
+    /// </summary>
+    private string GetDiceClass(Die die)
+    {
+        return die.IsHeld ? "dice dice-held" : "dice";
+    }
+
+    /// <summary>
+    /// Returns an emoji representation of the die value.
+    /// Uses actual die face emojis for visual appeal.
+    /// </summary>
+    private string GetDiceEmoji(int value)
+    {
+        return value switch
+        {
+            1 => "⚀",
+            2 => "⚁",
+            3 => "⚂",
+            4 => "⚃",
+            5 => "⚄",
+            6 => "⚅",
+            _ => "?"
+        };
+    }
+
+    /// <summary>
+    /// Starts a new game and navigates back to player setup.
+    /// </summary>
+    private void NewGame()
+    {
+        GameService.NewGame();
+        Navigation.NavigateTo("/");
+    }
+}

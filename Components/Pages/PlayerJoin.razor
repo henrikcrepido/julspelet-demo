@@ -32,7 +32,7 @@
                                   Variant="Variant.Outlined"
                                   Adornment="Adornment.End"
                                   AdornmentIcon="@Icons.Material.Filled.Person"
-                                  OnKeyPress="HandleKeyPress"
+                                  OnKeyDown="HandleKeyPress"
                                   Immediate="true"
                                   Class="mb-3" />
 
@@ -61,10 +61,10 @@
                             Players (@GameService.GameState.Players.Count)
                         </MudText>
                         
-                        <MudList>
+                        <MudList T="string">
                             @foreach (var player in GameService.GameState.Players)
                             {
-                                <MudListItem>
+                                <MudListItem T="string">
                                     <div class="d-flex justify-space-between align-center">
                                         <div class="d-flex align-center">
                                             <MudIcon Icon="@Icons.Material.Filled.Person" Class="mr-2" />
