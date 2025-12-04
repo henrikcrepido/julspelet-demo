@@ -466,6 +466,7 @@
     private void RollDice()
     {
         GameService.RollDice();
+        StateHasChanged(); // Explicitly trigger re-render
     }
 
     /// <summary>
@@ -478,6 +479,7 @@
             GameService.GameState.RollsThisTurn < GameState.MaxRollsPerTurn)
         {
             GameService.ToggleDieHold(index);
+            StateHasChanged(); // Explicitly trigger re-render
         }
     }
 
@@ -522,6 +524,7 @@
     private void SubmitScore(ScoreCategory category)
     {
         GameService.ScoreCategory(category);
+        StateHasChanged(); // Explicitly trigger re-render
     }
 
     /// <summary>
