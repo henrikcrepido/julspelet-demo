@@ -2,7 +2,17 @@
 
 ## Project Overview
 
-This is the Julspelet Demo project, a .NET application. When assisting with this repository, please follow these guidelines.
+This is the Julspelet Demo project, a .NET Core 9 Blazor application. When assisting with this repository, please follow these guidelines.
+
+### Developer Context
+**Learning Journey**: The developer is experienced with .NET Core backend development but new to Blazor. When providing assistance:
+- Focus on explaining Blazor-specific concepts (frontend patterns differ from backend)
+- Break down complex Blazor patterns into understandable pieces
+- Provide links to official documentation when introducing new Blazor concepts
+- Include comments explaining Blazor-specific code (component lifecycle, rendering, state management)
+- Highlight differences between backend patterns and Blazor frontend patterns
+- Compare approaches when multiple solutions exist, explaining pros and cons
+- Leverage existing .NET Core knowledge while teaching Blazor fundamentals
 
 ## Workflow Protocol
 
@@ -84,12 +94,22 @@ Would you like me to proceed with this plan?
 - Keep methods focused and single-purpose
 - Prefer LINQ for collection operations where appropriate
 
-### .NET Specific
-- Target modern .NET features (async/await, pattern matching, records, etc.)
+### .NET Core 9 & Blazor Specific
+- Target .NET 9 features and explain new capabilities when using them
 - Use nullable reference types to prevent null reference exceptions
-- Implement proper dependency injection patterns
+- Implement proper dependency injection patterns (explain service lifetimes)
 - Follow SOLID principles
-- Use the latest C# language features when appropriate
+- Use the latest C# language features when appropriate and explain their benefits
+
+### Blazor Best Practices
+- Explain component lifecycle methods (@code, OnInitialized, OnParametersSet, etc.)
+- Clarify render modes (Static SSR, Interactive Server, Interactive WebAssembly, Auto)
+- Demonstrate proper state management (cascading parameters, state containers)
+- Show form validation patterns and data binding (@bind, @bind-value)
+- Include JavaScript interop examples with explanations when needed
+- Explain component communication (parameters, EventCallback, cascading values)
+- Use Blazor's built-in components when possible (NavLink, Router, etc.)
+- Add comments explaining Razor syntax and directives (@page, @inject, @using, etc.)
 
 ## Architecture Patterns
 
