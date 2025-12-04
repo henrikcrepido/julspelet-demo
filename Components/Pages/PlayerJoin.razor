@@ -1,0 +1,199 @@
+@page "/"
+@using Julspelet.Services
+@inject GameService GameService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+@* 
+    PlayerJoin Component - Entry point for the game
+    Players enter their names here before the game starts.
+    This demonstrates Blazor's @page directive for routing and @inject for dependency injection.
+*@
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
+    <MudPaper Elevation="3" Class="pa-6">
+        <div class="text-center mb-6">
+            <MudText Typo="Typo.h3" Color="Color.Primary">🎄 Welcome to Julspelet! 🎅</MudText>
+            <MudText Typo="Typo.h6" Color="Color.Secondary" Class="mt-2">
+                A Festive Yatzy Tournament
+            </MudText>
+        </div>
+
+        @if (!GameService.GameState.IsGameStarted)
+        {
+            @* Player Entry Form - Shows before game starts *@
+            <MudCard Class="mb-4">
+                <MudCardContent>
+                    <MudText Typo="Typo.h6" Class="mb-4">Add Players (Minimum 2)</MudText>
+                    
+                    @* Input field for new player name *@
+                    <MudTextField @bind-Value="newPlayerName" 
+                                  Label="Player Name" 
+                                  Variant="Variant.Outlined"
+                                  Adornment="Adornment.End"
+                                  AdornmentIcon="@Icons.Material.Filled.Person"
+                                  OnKeyPress="HandleKeyPress"
+                                  Immediate="true"
+                                  Class="mb-3" />
+
+                    <MudButton Variant="Variant.Filled" 
+                               Color="Color.Primary" 
+                               OnClick="AddPlayer"
+                               Disabled="string.IsNullOrWhiteSpace(newPlayerName)"
+                               FullWidth="true"
+                               StartIcon="@Icons.Material.Filled.Add">
+                        Add Player
+                    </MudButton>
+
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <MudAlert Severity="Severity.Error" Class="mt-3">@errorMessage</MudAlert>
+                    }
+                </MudCardContent>
+            </MudCard>
+
+            @* Display list of added players *@
+            @if (GameService.GameState.Players.Any())
+            {
+                <MudCard Class="mb-4">
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6" Class="mb-3">
+                            Players (@GameService.GameState.Players.Count)
+                        </MudText>
+                        
+                        <MudList>
+                            @foreach (var player in GameService.GameState.Players)
+                            {
+                                <MudListItem>
+                                    <div class="d-flex justify-space-between align-center">
+                                        <div class="d-flex align-center">
+                                            <MudIcon Icon="@Icons.Material.Filled.Person" Class="mr-2" />
+                                            <MudText>@player.Name</MudText>
+                                        </div>
+                                        <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                                       Color="Color.Error" 
+                                                       Size="Size.Small"
+                                                       OnClick="@(() => RemovePlayer(player.Id))" />
+                                    </div>
+                                </MudListItem>
+                                <MudDivider />
+                            }
+                        </MudList>
+                    </MudCardContent>
+                </MudCard>
+
+                @* Start Game Button *@
+                <MudButton Variant="Variant.Filled" 
+                           Color="Color.Success" 
+                           OnClick="StartGame"
+                           Disabled="GameService.GameState.Players.Count < 2"
+                           FullWidth="true"
+                           Size="Size.Large"
+                           StartIcon="@Icons.Material.Filled.PlayArrow">
+                    Start Game
+                </MudButton>
+
+                @if (GameService.GameState.Players.Count < 2)
+                {
+                    <MudAlert Severity="Severity.Info" Class="mt-3">
+                        You need at least 2 players to start the game.
+                    </MudAlert>
+                }
+            }
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    // Local component state
+    private string newPlayerName = string.Empty;
+    private string errorMessage = string.Empty;
+
+    /// <summary>
+    /// Component lifecycle method - called when the component is initialized.
+    /// We subscribe to game state changes here to re-render when needed.
+    /// This is a key Blazor concept for reactive UI updates.
+    /// </summary>
+    protected override void OnInitialized()
+    {
+        // Subscribe to game state changes to trigger UI re-render
+        // The += syntax adds an event handler
+        GameService.OnGameStateChanged += StateHasChanged;
+    }
+
+    /// <summary>
+    /// Handles Enter key press in the text field to add a player.
+    /// Demonstrates keyboard event handling in Blazor.
+    /// </summary>
+    private void HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(newPlayerName))
+        {
+            AddPlayer();
+        }
+    }
+
+    /// <summary>
+    /// Adds a new player to the game.
+    /// Shows error handling and form validation patterns.
+    /// </summary>
+    private void AddPlayer()
+    {
+        errorMessage = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(newPlayerName))
+        {
+            errorMessage = "Please enter a player name.";
+            return;
+        }
+
+        var success = GameService.AddPlayer(newPlayerName);
+        
+        if (success)
+        {
+            newPlayerName = string.Empty; // Clear the input field
+        }
+        else
+        {
+            errorMessage = "Player name already exists or is invalid.";
+        }
+    }
+
+    /// <summary>
+    /// Removes a player from the game.
+    /// Demonstrates calling service methods from UI events.
+    /// </summary>
+    private void RemovePlayer(Guid playerId)
+    {
+        GameService.RemovePlayer(playerId);
+    }
+
+    /// <summary>
+    /// Starts the game and navigates to the game board.
+    /// Shows Blazor's programmatic navigation using NavigationManager.
+    /// </summary>
+    private void StartGame()
+    {
+        var success = GameService.StartGame();
+        
+        if (success)
+        {
+            // Navigate to the game board page
+            // NavigationManager is injected at the top of this file
+            Navigation.NavigateTo("/game");
+        }
+        else
+        {
+            errorMessage = "Cannot start game. Need at least 2 players.";
+        }
+    }
+
+    /// <summary>
+    /// Component lifecycle method - called when component is disposed.
+    /// Important to unsubscribe from events to prevent memory leaks!
+    /// </summary>
+    public void Dispose()
+    {
+        GameService.OnGameStateChanged -= StateHasChanged;
+    }
+}
