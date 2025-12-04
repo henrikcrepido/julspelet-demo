@@ -38,12 +38,18 @@ This file tracks the key prompts and requirements given during the development o
 - Added Application Requirements section specifying multiplayer game
 - Created this prompt-history.md file to track all requests
 
+### 7. Player Join Mechanism
+**Request**: "users will join by name to the game."
+- Added requirement that users join by entering their name
+- Updated application requirements in copilot instructions
+
 ---
 
 ## Requirements Summary
 
 ### Application Type
 - Multiplayer game for 2 or more players
+- Users join by entering their name
 - Built with .NET Core 9 Blazor Server
 - UI using MudBlazor component library
 

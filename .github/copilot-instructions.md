@@ -7,6 +7,7 @@ This is the Julspelet Demo project, a .NET Core 9 Blazor Server application usin
 ### Application Requirements
 This is a multiplayer game application with the following characteristics:
 - Supports 2 or more players
+- Users join the game by entering their name
 - Interactive gameplay between multiple participants
 - Real-time or turn-based game mechanics
 - Player state management and tracking
