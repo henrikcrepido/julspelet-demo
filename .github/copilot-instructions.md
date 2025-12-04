@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-This is the Julspelet Demo project, a .NET Core 9 Blazor application. When assisting with this repository, please follow these guidelines.
+This is the Julspelet Demo project, a .NET Core 9 Blazor Server application using MudBlazor for the UI component library. When assisting with this repository, please follow these guidelines.
 
 ### Developer Context
 **Learning Journey**: The developer is experienced with .NET Core backend development but new to Blazor. When providing assistance:
@@ -101,15 +101,24 @@ Would you like me to proceed with this plan?
 - Follow SOLID principles
 - Use the latest C# language features when appropriate and explain their benefits
 
-### Blazor Best Practices
+### Blazor Server Best Practices
 - Explain component lifecycle methods (@code, OnInitialized, OnParametersSet, etc.)
-- Clarify render modes (Static SSR, Interactive Server, Interactive WebAssembly, Auto)
+- Focus on Interactive Server render mode patterns and SignalR connection considerations
 - Demonstrate proper state management (cascading parameters, state containers)
 - Show form validation patterns and data binding (@bind, @bind-value)
 - Include JavaScript interop examples with explanations when needed
 - Explain component communication (parameters, EventCallback, cascading values)
 - Use Blazor's built-in components when possible (NavLink, Router, etc.)
 - Add comments explaining Razor syntax and directives (@page, @inject, @using, etc.)
+
+### MudBlazor Guidelines
+- Prefer MudBlazor components over native HTML/Blazor components for UI consistency
+- Use MudBlazor components: MudButton, MudTextField, MudDialog, MudTable, MudCard, etc.
+- Follow MudBlazor theming and styling conventions
+- Leverage MudBlazor's built-in form validation with MudForm
+- Use MudBlazor layout components (MudAppBar, MudDrawer, MudMainContent)
+- Reference MudBlazor documentation when introducing new components
+- Explain MudBlazor-specific parameters and events when using them
 
 ## Architecture Patterns
 
