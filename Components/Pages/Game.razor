@@ -23,37 +23,97 @@
     else if (GameService.GameState.IsGameComplete)
     {
         @* Game Over Screen *@
-        <MudPaper Elevation="3" Class="pa-6 text-center">
-            <MudText Typo="Typo.h3" Color="Color.Success" Class="mb-4">
-                🎄 Game Over! 🎅
-            </MudText>
-            
-            @{
-                var winners = GameService.GameState.GetWinners();
-                if (winners.Count == 1)
-                {
-                    <MudText Typo="Typo.h4" Class="mb-4">
-                        🏆 Winner: @winners[0].Name with @winners[0].TotalScore points! 🏆
-                    </MudText>
+        <MudPaper Elevation="3" Class="pa-6">
+            <div class="text-center mb-6">
+                <MudText Typo="Typo.h3" Color="Color.Success" Class="mb-2">
+                    🎄 Game Over! 🎅
+                </MudText>
+                
+                @{
+                    var winners = GameService.GameState.GetWinners();
+                    if (winners.Count == 1)
+                    {
+                        <MudText Typo="Typo.h4" Class="mb-2">
+                            🏆 Winner: @winners[0].Name! 🏆
+                        </MudText>
+                        <MudText Typo="Typo.h5" Color="Color.Secondary">
+                            Final Score: @winners[0].TotalScore points
+                        </MudText>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.h4" Class="mb-2">
+                            🏆 It's a Tie! 🏆
+                        </MudText>
+                        <MudText Typo="Typo.h6" Color="Color.Secondary">
+                            Winners: @string.Join(", ", winners.Select(w => w.Name))
+                        </MudText>
+                        <MudText Typo="Typo.h6" Color="Color.Secondary">
+                            Final Score: @winners[0].TotalScore points each
+                        </MudText>
+                    }
                 }
-                else
-                {
-                    <MudText Typo="Typo.h4" Class="mb-4">
-                        🏆 It's a tie! 🏆
-                    </MudText>
-                    <MudText Typo="Typo.h6" Class="mb-4">
-                        Winners: @string.Join(", ", winners.Select(w => w.Name)) with @winners[0].TotalScore points each!
-                    </MudText>
-                }
-            }
+            </div>
 
-            <MudButton Variant="Variant.Filled" 
-                       Color="Color.Primary" 
-                       Size="Size.Large"
-                       OnClick="NewGame"
-                       StartIcon="@Icons.Material.Filled.Refresh">
-                New Game
-            </MudButton>
+            @* Final Standings Table *@
+            <MudText Typo="Typo.h6" Class="mb-3 text-center">Final Standings</MudText>
+            <MudSimpleTable Elevation="0" Class="mb-4">
+                <thead>
+                    <tr>
+                        <th class="text-center">Rank</th>
+                        <th>Player</th>
+                        <th class="text-right">Upper</th>
+                        <th class="text-right">Bonus</th>
+                        <th class="text-right">Lower</th>
+                        <th class="text-right"><strong>Total</strong></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        var rank = 1;
+                        var sortedPlayers = GameService.GameState.Players.OrderByDescending(p => p.TotalScore).ToList();
+                    }
+                    @foreach (var player in sortedPlayers)
+                    {
+                        <tr class="@(winners.Contains(player) ? "winner-row" : "")">
+                            <td class="text-center">
+                                @if (rank == 1)
+                                {
+                                    <span>🥇</span>
+                                }
+                                else if (rank == 2)
+                                {
+                                    <span>🥈</span>
+                                }
+                                else if (rank == 3)
+                                {
+                                    <span>🥉</span>
+                                }
+                                else
+                                {
+                                    @rank
+                                }
+                            </td>
+                            <td><strong>@player.Name</strong></td>
+                            <td class="text-right">@player.ScoreCard.GetUpperSectionTotal()</td>
+                            <td class="text-right">@player.ScoreCard.GetUpperSectionBonus()</td>
+                            <td class="text-right">@player.ScoreCard.GetLowerSectionTotal()</td>
+                            <td class="text-right"><strong>@player.TotalScore</strong></td>
+                        </tr>
+                        rank++;
+                    }
+                </tbody>
+            </MudSimpleTable>
+
+            <div class="text-center">
+                <MudButton Variant="Variant.Filled" 
+                           Color="Color.Primary" 
+                           Size="Size.Large"
+                           OnClick="NewGame"
+                           StartIcon="@Icons.Material.Filled.Refresh">
+                    New Game
+                </MudButton>
+            </div>
         </MudPaper>
     }
     else
@@ -70,6 +130,13 @@
                     <MudText Typo="Typo.body1" Color="Color.Secondary">
                         Roll @GameService.GameState.RollsThisTurn of @GameState.MaxRollsPerTurn
                     </MudText>
+                    
+                    @if (GameService.GameState.RollsThisTurn == 0)
+                    {
+                        <MudAlert Severity="Severity.Info" Dense="true" Class="mt-2">
+                            Click "Start Turn" to roll the dice!
+                        </MudAlert>
+                    }
                 </MudPaper>
 
                 @* Dice Display *@
@@ -358,6 +425,11 @@
     .current-player-row {
         background: #e8f5e9;
         font-weight: 500;
+    }
+
+    .winner-row {
+        background: #fff3cd;
+        font-weight: 600;
     }
 
     .text-muted {
