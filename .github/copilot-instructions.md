@@ -4,6 +4,14 @@
 
 This is the Julspelet Demo project, a .NET Core 9 Blazor Server application using MudBlazor for the UI component library. When assisting with this repository, please follow these guidelines.
 
+### Application Requirements
+This is a multiplayer game application with the following characteristics:
+- Supports 2 or more players
+- Interactive gameplay between multiple participants
+- Real-time or turn-based game mechanics
+- Player state management and tracking
+- Game session handling
+
 ### Developer Context
 **Learning Journey**: The developer is experienced with .NET Core backend development but new to Blazor. When providing assistance:
 - Focus on explaining Blazor-specific concepts (frontend patterns differ from backend)
