@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Julspelet", "Julspelet.csproj", "{2EFFA476-D300-4ED8-8772-4B4FA538B185}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Julspelet.Shared", "Julspelet.Shared\Julspelet.Shared.csproj", "{63D85E95-6B0D-4189-9696-B717DE0A4F9C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Julspelet.Maui", "Julspelet.Maui\Julspelet.Maui.csproj", "{655213D5-400E-43D2-A4A5-D7C72E27624A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2EFFA476-D300-4ED8-8772-4B4FA538B185}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2EFFA476-D300-4ED8-8772-4B4FA538B185}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2EFFA476-D300-4ED8-8772-4B4FA538B185}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2EFFA476-D300-4ED8-8772-4B4FA538B185}.Release|Any CPU.Build.0 = Release|Any CPU
+		{63D85E95-6B0D-4189-9696-B717DE0A4F9C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{63D85E95-6B0D-4189-9696-B717DE0A4F9C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{63D85E95-6B0D-4189-9696-B717DE0A4F9C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{63D85E95-6B0D-4189-9696-B717DE0A4F9C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{655213D5-400E-43D2-A4A5-D7C72E27624A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{655213D5-400E-43D2-A4A5-D7C72E27624A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{655213D5-400E-43D2-A4A5-D7C72E27624A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{655213D5-400E-43D2-A4A5-D7C72E27624A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
