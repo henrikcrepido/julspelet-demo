@@ -29,6 +29,10 @@
     <Content Remove="Julspelet.Maui\**" />
     <EmbeddedResource Remove="Julspelet.Maui\**" />
     <None Remove="Julspelet.Maui\**" />
+    
+    <!-- Exclude Shared library source files to prevent duplicate type definitions -->
+    <Compile Remove="Julspelet.Shared\**\*.cs" />
+    <Compile Remove="Julspelet.Shared\**\*.razor" />
   </ItemGroup>
 
 </Project>
