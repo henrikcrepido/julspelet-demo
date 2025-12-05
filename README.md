@@ -5,16 +5,20 @@ A festive multiplayer Yatzy game built with .NET 8 Blazor Server and MudBlazor. 
 ![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet)
 ![Blazor Server](https://img.shields.io/badge/Blazor-Server-512BD4?logo=blazor)
 ![MudBlazor](https://img.shields.io/badge/MudBlazor-8.15.0-594AE2)
-![Tests](https://img.shields.io/badge/tests-28%20passing-success)
+![Tests](https://img.shields.io/badge/tests-56%20passing-success)
+![Platforms](https://img.shields.io/badge/platforms-Web%20%7C%20Android%20%7C%20iOS%20%7C%20Windows%20%7C%20macOS-blue)
 
 ## 🎮 Features
 
-- **Multiplayer Support**: 2 or more players
-- **Classic Yatzy Rules**: All 15 scoring categories with proper bonuses
-- **Interactive Gameplay**: Roll dice up to 3 times per turn, hold dice between rolls
-- **Real-time Scoreboard**: Track all players' progress throughout the game
-- **Christmas Theme**: Festive UI with holiday colors, animations, and decorations
-- **Responsive Design**: Works on desktop, tablet, and mobile devices
+- **🌐 Web Multiplayer**: Play with friends anywhere using SignalR (6-digit session codes)
+- **📱 Local P2P Multiplayer**: Connect directly on local Wi-Fi (MAUI - Android/iOS/Windows/macOS)
+- **🎲 Classic Yatzy Rules**: All 15 scoring categories with proper bonuses
+- **🎯 Interactive Gameplay**: Roll dice up to 3 times per turn, hold dice between rolls
+- **📊 Real-time Scoreboard**: Track all players' progress throughout the game
+- **🛡️ Anti-Cheat Protection**: Server-authoritative validation with message authentication
+- **🎄 Christmas Theme**: Festive UI with holiday colors, animations, and decorations
+- **📱 Cross-Platform**: Web, Android, iOS, Windows, and macOS support
+- **🔒 Privacy-First**: Local multiplayer data never leaves your network
 
 ## 🎲 Game Rules
 
@@ -43,6 +47,26 @@ Score the highest total points by filling all 15 categories on your scorecard.
 - **Full House** (3 of a kind + pair): Sum of all dice
 - **Chance**: Sum of all dice (any combination)
 - **Yatzy** (5 of a kind): 50 points
+
+## 🌐 Multiplayer
+
+Julspelet supports two multiplayer modes:
+
+### Web Multiplayer (SignalR)
+- Play from anywhere with internet
+- Host creates session, shares 6-digit code
+- Friends join using the code
+- Real-time synchronization via SignalR
+- Perfect for remote play
+
+### Local Multiplayer (MAUI P2P)
+- Play on same Wi-Fi network
+- No internet required
+- Automatic session discovery
+- Direct device-to-device communication
+- Low latency, private gaming
+
+**See [MULTIPLAYER.md](MULTIPLAYER.md) for complete guide!**
 
 ## 🚀 Getting Started
 
@@ -81,42 +105,75 @@ The application will be available at `http://localhost:5027` (or the port shown 
 
 ### Running Tests
 
-**Execute unit tests:**
+**Execute all tests:**
 ```bash
 dotnet test
 ```
 
-All 28 tests covering Yatzy scoring logic should pass.
+All 56 tests should pass (28 unit tests + 28 integration tests).
+
+**Run specific test suites:**
+```bash
+# Unit tests (scoring logic)
+dotnet test --filter "FullyQualifiedName~ScoringServiceTests"
+
+# Integration tests (game service & networking)
+dotnet test --filter "FullyQualifiedName~GameServiceIntegrationTests|FullyQualifiedName~MultiplayerIntegrationTests"
+```
 
 ## 📁 Project Structure
 
 ```
 julspelet-demo/
-├── Components/
-│   ├── Layout/
-│   │   ├── MainLayout.razor          # Main app layout with Christmas theme
-│   │   └── NavMenu.razor             # Navigation menu
-│   └── Pages/
-│       ├── PlayerJoin.razor          # Player entry page (/)
-│       ├── Game.razor                # Main game board (/game)
-│       └── Error.razor               # Error handling page
-├── Models/
-│   ├── Die.cs                        # Individual die model
-│   ├── DiceSet.cs                    # Set of 5 dice
-│   ├── GameState.cs                  # Game state management
-│   ├── Player.cs                     # Player model
-│   ├── ScoreCard.cs                  # Player scorecard
-│   └── ScoreCategory.cs              # Scoring categories enum
-├── Services/
-│   ├── GameService.cs                # Game flow management
-│   └── ScoringService.cs             # Yatzy scoring logic
+├── Julspelet.Shared/                 # Shared Razor Class Library
+│   ├── Components/
+│   │   ├── Pages/
+│   │   │   ├── SessionBrowser.razor   # Multiplayer session browser
+│   │   │   ├── MultiplayerLobby.razor # Game lobby
+│   │   │   ├── PlayerJoin.razor       # Player entry page
+│   │   │   ├── Game.razor             # Main game board
+│   │   │   └── ...                    # Other pages
+│   │   └── Layout/
+│   │       ├── MainLayout.razor       # Main layout
+│   │       └── NavMenu.razor          # Navigation menu
+│   ├── Models/
+│   │   ├── Networking/
+│   │   │   ├── NetworkMessage.cs      # Polymorphic message types
+│   │   │   ├── GameSession.cs         # Session information
+│   │   │   └── PeerInfo.cs            # Peer connection info
+│   │   ├── Die.cs, DiceSet.cs         # Dice models
+│   │   ├── GameState.cs, Player.cs    # Game models
+│   │   └── ScoreCard.cs, ScoreCategory.cs
+│   └── Services/
+│       ├── Networking/
+│       │   ├── INetworkService.cs      # Network abstraction
+│       │   ├── SignalRNetworkService.cs # Web implementation
+│       │   ├── SocketNetworkService.cs  # P2P implementation
+│       │   ├── GameSyncService.cs       # State synchronization
+│       │   ├── MessageValidator.cs      # Anti-cheat validation
+│       │   └── MessageAuthenticator.cs  # Message signing
+│       ├── GameService.cs              # Game flow management
+│       ├── ScoringService.cs           # Yatzy scoring logic
+│       └── TournamentService.cs        # Tournament management
+├── Julspelet.csproj                  # Web project (Blazor Server)
+│   ├── Hubs/
+│   │   └── GameHub.cs                 # SignalR hub for web multiplayer
+│   └── Program.cs                     # Web app configuration
+├── Julspelet.Maui/                   # MAUI Blazor Hybrid project
+│   ├── Platforms/                     # Platform-specific code
+│   │   ├── Android/
+│   │   ├── iOS/
+│   │   ├── Windows/
+│   │   └── MacCatalyst/
+│   └── MauiProgram.cs                 # MAUI configuration
 ├── Tests/
-│   └── ScoringServiceTests.cs        # Unit tests (28 tests)
-├── wwwroot/
-│   ├── app.css                       # Christmas theme styles
-│   └── bootstrap/                    # Bootstrap CSS
-├── Program.cs                        # Application entry point
-├── appsettings.json                  # Configuration
+│   ├── ScoringServiceTests.cs         # Scoring logic tests (28)
+│   ├── GameServiceIntegrationTests.cs # Game service tests (14)
+│   ├── MultiplayerIntegrationTests.cs # Network tests (14)
+│   ├── UI-TESTING-GUIDE.md            # Testing documentation
+│   └── MULTIPLAYER-TESTING.md         # Multiplayer testing guide
+├── MULTIPLAYER.md                    # User multiplayer guide
+├── PROGRESS.md                       # Development progress log
 └── README.md                         # This file
 ```
 
@@ -179,11 +236,23 @@ dotnet test /p:CollectCoverage=true
 ```
 
 **Test Coverage:**
+
+_Unit Tests (28):_
 - ✅ All 15 Yatzy scoring categories
 - ✅ Edge cases (empty dice, invalid combinations)
-- ✅ Bonus calculations
-- ✅ Available categories logic
-- ✅ 28 unit tests, all passing
+- ✅ Bonus calculations and available categories
+
+_Integration Tests (28):_
+- ✅ Game service integration (14 tests)
+  - Game initialization and player management
+  - Dice rolling, holding, and turn progression
+  - Scoring and game flow
+- ✅ Multiplayer networking (14 tests)
+  - Message serialization/deserialization
+  - Authentication and validation
+  - Anti-cheat protection and rate limiting
+
+**Total: 56 tests, all passing**
 
 ### UI Testing
 
