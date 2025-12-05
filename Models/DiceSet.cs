@@ -59,4 +59,15 @@ public class DiceSet
             Dice[index].ToggleHold();
         }
     }
+
+    /// <summary>
+    /// Releases all held dice.
+    /// </summary>
+    public void ReleaseAllHolds()
+    {
+        foreach (var die in Dice)
+        {
+            die.IsHeld = false;
+        }
+    }
 }

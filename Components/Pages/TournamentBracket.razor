@@ -1,0 +1,314 @@
+@page "/tournament-bracket/{tournamentId}"
+@using Julspelet.Models
+@using Julspelet.Services
+@inject TournamentService TournamentService
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+@implements IDisposable
+
+<PageTitle>Tournament Bracket - Julspelet</PageTitle>
+
+@if (_tournament == null)
+{
+    <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
+        <MudAlert Severity="Severity.Error">Tournament not found!</MudAlert>
+    </MudContainer>
+}
+else
+{
+    <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+        <MudPaper Elevation="3" Class="pa-6" Style="background: linear-gradient(135deg, #1e4620 0%, #2d5a2f 100%);">
+            <MudText Typo="Typo.h3" Align="Align.Center" Color="Color.Warning" Class="mb-2" Style="font-family: 'Mountains of Christmas', cursive;">
+                🎄 @_tournament.Name 🎄
+            </MudText>
+            <MudText Typo="Typo.h6" Align="Align.Center" Color="Color.Success">
+                @GetStatusText()
+            </MudText>
+        </MudPaper>
+
+        @if (_tournament.IsCompleted && _tournament.Winner != null)
+        {
+            <MudPaper Elevation="3" Class="pa-8 mt-4" Style="background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);">
+                <MudText Typo="Typo.h3" Align="Align.Center" Color="Color.Error" Class="mb-2">
+                    🏆 CHAMPION 🏆
+                </MudText>
+                <MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Dark">
+                    @_tournament.Winner.Name
+                </MudText>
+                <MudText Typo="Typo.h6" Align="Align.Center" Color="Color.Dark" Class="mt-2">
+                    Final Score: @_tournament.Winner.ScoreCard.GetTotalScore()
+                </MudText>
+            </MudPaper>
+        }
+
+        <!-- Tournament Bracket -->
+        <MudPaper Elevation="2" Class="pa-6 mt-4">
+            <MudText Typo="Typo.h5" Color="Color.Primary" Class="mb-4">
+                🏆 Tournament Bracket
+            </MudText>
+
+            @foreach (var round in GetRoundsToDisplay())
+            {
+                <MudText Typo="Typo.h6" Color="Color.Secondary" Class="mt-4 mb-3">
+                    @GetRoundDisplayName(round)
+                </MudText>
+                
+                var matches = TournamentService.GetMatchesForRound(_tournament.Id, round);
+                
+                <MudGrid>
+                    @foreach (var match in matches)
+                    {
+                        <MudItem xs="12" md="6" lg="4">
+                            <MudCard Outlined="true" Class="mb-3" Style="@GetMatchCardStyle(match)">
+                                <MudCardContent>
+                                    <MudText Typo="Typo.subtitle1" Color="Color.Primary" Class="mb-2">
+                                        <strong>Match @match.MatchNumber</strong>
+                                    </MudText>
+                                    
+                                    @if (match.Players.Count >= 2)
+                                    {
+                                        <MudStack Spacing="2">
+                                            <MudPaper Elevation="0" Class="pa-2" Style="@GetPlayerStyle(match, match.Players[0])">
+                                                <MudText Typo="Typo.body1">
+                                                    🎅 @match.Players[0].Name
+                                                    @if (match.IsCompleted)
+                                                    {
+                                                        <text> - @match.Players[0].ScoreCard.GetTotalScore()</text>
+                                                    }
+                                                    @if (match.Winner?.Id == match.Players[0].Id)
+                                                    {
+                                                        <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" Color="Color.Warning" Size="Size.Small" />
+                                                    }
+                                                </MudText>
+                                            </MudPaper>
+                                            
+                                            <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Default">VS</MudText>
+                                            
+                                            <MudPaper Elevation="0" Class="pa-2" Style="@GetPlayerStyle(match, match.Players[1])">
+                                                <MudText Typo="Typo.body1">
+                                                    🎅 @match.Players[1].Name
+                                                    @if (match.IsCompleted)
+                                                    {
+                                                        <text> - @match.Players[1].ScoreCard.GetTotalScore()</text>
+                                                    }
+                                                    @if (match.Winner?.Id == match.Players[1].Id)
+                                                    {
+                                                        <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" Color="Color.Warning" Size="Size.Small" />
+                                                    }
+                                                </MudText>
+                                            </MudPaper>
+                                        </MudStack>
+                                    }
+                                    
+                                    <MudDivider Class="my-2" />
+                                    
+                                    @if (match.IsCompleted)
+                                    {
+                                        <MudChip T="string" Color="Color.Success" Size="Size.Small">✅ Completed</MudChip>
+                                        @if (match.Winner != null)
+                                        {
+                                            <MudText Typo="Typo.caption" Color="Color.Success" Class="mt-1">
+                                                Winner: @match.Winner.Name
+                                            </MudText>
+                                        }
+                                    }
+                                    else if (match.StartedAt != null)
+                                    {
+                                        <MudChip T="string" Color="Color.Info" Size="Size.Small">🎮 In Progress</MudChip>
+                                    }
+                                    else
+                                    {
+                                        <MudChip T="string" Color="Color.Default" Size="Size.Small">⏳ Not Started</MudChip>
+                                    }
+                                </MudCardContent>
+                            </MudCard>
+                        </MudItem>
+                    }
+                </MudGrid>
+            }
+        </MudPaper>
+
+        <!-- All Players List -->
+        <MudPaper Elevation="2" Class="pa-6 mt-4">
+            <MudText Typo="Typo.h6" Color="Color.Primary" Class="mb-3">
+                👥 Participants (@_tournament.RegisteredPlayers.Count)
+            </MudText>
+            
+            <MudChipSet T="string">
+                @foreach (var player in _tournament.RegisteredPlayers.OrderBy(p => p.Name))
+                {
+                    <MudChip T="string" Color="@(IsPlayerStillInTournament(player) ? Color.Success : Color.Default)" 
+                             Size="Size.Medium">
+                        🎅 @player.Name
+                    </MudChip>
+                }
+            </MudChipSet>
+        </MudPaper>
+
+        <MudButton Variant="Variant.Outlined" 
+                   Color="Color.Default"
+                   Class="mt-4"
+                   StartIcon="@Icons.Material.Filled.ArrowBack"
+                   OnClick="@(() => NavigationManager.NavigateTo("/tournament-lobby"))">
+            Back to Lobby
+        </MudButton>
+    </MudContainer>
+}
+
+@code {
+    [Parameter]
+    public string TournamentId { get; set; } = "";
+
+    private Tournament? _tournament;
+    private System.Threading.Timer? _refreshTimer;
+
+    protected override void OnInitialized()
+    {
+        LoadTournament();
+        
+        // Subscribe to tournament events
+        TournamentService.MatchCompleted += OnMatchCompleted;
+        TournamentService.RoundAdvanced += OnRoundAdvanced;
+        TournamentService.TournamentCompleted += OnTournamentCompleted;
+        
+        // Auto-refresh every 3 seconds
+        _refreshTimer = new System.Threading.Timer(async _ =>
+        {
+            await InvokeAsync(() =>
+            {
+                LoadTournament();
+                StateHasChanged();
+            });
+        }, null, TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(3));
+    }
+
+    private void LoadTournament()
+    {
+        _tournament = TournamentService.GetTournament(TournamentId);
+    }
+
+    private List<TournamentRound> GetRoundsToDisplay()
+    {
+        var rounds = new List<TournamentRound>();
+        
+        if (_tournament == null) return rounds;
+        
+        foreach (TournamentRound round in Enum.GetValues(typeof(TournamentRound)))
+        {
+            if (round == TournamentRound.Completed) continue;
+            
+            if (_tournament.Matches.Any(m => m.Round == round))
+            {
+                rounds.Add(round);
+            }
+        }
+        
+        return rounds;
+    }
+
+    private string GetRoundDisplayName(TournamentRound round)
+    {
+        return round switch
+        {
+            TournamentRound.QuarterFinals => "🎯 Quarter-Finals",
+            TournamentRound.SemiFinals => "⭐ Semi-Finals",
+            TournamentRound.Final => "🏆 Final",
+            _ => round.ToString()
+        };
+    }
+
+    private string GetStatusText()
+    {
+        if (_tournament == null) return "";
+        
+        if (_tournament.IsCompleted) return "Tournament Complete!";
+        if (_tournament.HasStarted) return $"Current Round: {_tournament.CurrentRound}";
+        return "Tournament Starting Soon...";
+    }
+
+    private string GetMatchCardStyle(Match match)
+    {
+        if (match.IsCompleted)
+        {
+            return "border: 2px solid #4caf50;";
+        }
+        if (match.StartedAt != null)
+        {
+            return "border: 2px solid #2196f3;";
+        }
+        return "border: 2px solid #e0e0e0;";
+    }
+
+    private string GetPlayerStyle(Match match, Player player)
+    {
+        if (match.Winner?.Id == player.Id)
+        {
+            return "background-color: rgba(76, 175, 80, 0.2); font-weight: bold;";
+        }
+        if (match.IsCompleted)
+        {
+            return "background-color: rgba(0, 0, 0, 0.05);";
+        }
+        return "background-color: rgba(255, 255, 255, 0.5);";
+    }
+
+    private bool IsPlayerStillInTournament(Player player)
+    {
+        if (_tournament == null || !_tournament.HasStarted) return true;
+        
+        // Check if player has won their most recent match or has an upcoming match
+        var playerMatches = _tournament.Matches
+            .Where(m => m.Players.Any(p => p.Id == player.Id))
+            .OrderByDescending(m => m.Round)
+            .ToList();
+        
+        if (!playerMatches.Any()) return false;
+        
+        var latestMatch = playerMatches.First();
+        return !latestMatch.IsCompleted || latestMatch.Winner?.Id == player.Id;
+    }
+
+    private void OnMatchCompleted(Tournament tournament, Match match)
+    {
+        if (tournament.Id == TournamentId)
+        {
+            InvokeAsync(() =>
+            {
+                LoadTournament();
+                StateHasChanged();
+            });
+        }
+    }
+
+    private void OnRoundAdvanced(Tournament tournament, TournamentRound round)
+    {
+        if (tournament.Id == TournamentId)
+        {
+            InvokeAsync(() =>
+            {
+                LoadTournament();
+                StateHasChanged();
+            });
+        }
+    }
+
+    private void OnTournamentCompleted(Tournament tournament)
+    {
+        if (tournament.Id == TournamentId)
+        {
+            InvokeAsync(() =>
+            {
+                LoadTournament();
+                StateHasChanged();
+            });
+        }
+    }
+
+    public void Dispose()
+    {
+        _refreshTimer?.Dispose();
+        TournamentService.MatchCompleted -= OnMatchCompleted;
+        TournamentService.RoundAdvanced -= OnRoundAdvanced;
+        TournamentService.TournamentCompleted -= OnTournamentCompleted;
+    }
+}

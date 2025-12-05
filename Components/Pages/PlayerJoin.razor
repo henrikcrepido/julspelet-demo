@@ -103,6 +103,30 @@
             }
         }
     </MudPaper>
+
+    @* Tournament Promotion Section *@
+    <MudPaper Elevation="3" Class="pa-6 mt-4" Style="background: linear-gradient(135deg, #8b0000 0%, #dc143c 100%);">
+        <MudText Typo="Typo.h5" Align="Align.Center" Style="color: #fffacd;" Class="mb-3">
+            🏆 New: Tournament Mode! 🏆
+        </MudText>
+        <MudText Typo="Typo.body1" Align="Align.Center" Style="color: white;" Class="mb-4">
+            Compete in organized tournaments with quarter-finals, semi-finals, and finals!
+        </MudText>
+        <div class="d-flex justify-center gap-4">
+            <MudButton Variant="Variant.Filled" 
+                       Color="Color.Warning"
+                       StartIcon="@Icons.Material.Filled.EmojiEvents"
+                       OnClick="@(() => Navigation.NavigateTo("/tournament-lobby"))">
+                View Tournaments
+            </MudButton>
+            <MudButton Variant="Variant.Outlined" 
+                       Style="color: white; border-color: white;"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       OnClick="@(() => Navigation.NavigateTo("/create-tournament"))">
+                Create Tournament
+            </MudButton>
+        </div>
+    </MudPaper>
 </MudContainer>
 
 @code {

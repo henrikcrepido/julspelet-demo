@@ -1,0 +1,148 @@
+@page "/create-tournament"
+@using Julspelet.Models
+@using Julspelet.Services
+@inject TournamentService TournamentService
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+<PageTitle>Create Tournament - Julspelet</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
+    <MudPaper Elevation="3" Class="pa-6" Style="background: linear-gradient(135deg, #1e4620 0%, #2d5a2f 100%);">
+        <MudText Typo="Typo.h3" Align="Align.Center" Color="Color.Warning" Class="mb-4" Style="font-family: 'Mountains of Christmas', cursive;">
+            🎄 Create Christmas Tournament 🎄
+        </MudText>
+        
+        <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Success" Class="mb-6">
+            Set up a festive Yatzy tournament for your friends!
+        </MudText>
+
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4">@_errorMessage</MudAlert>
+        }
+
+        <MudGrid>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_tournamentName" 
+                              Label="Tournament Name" 
+                              Variant="Variant.Outlined"
+                              Required="true"
+                              HelperText="Give your tournament a festive name!"
+                              Style="background-color: rgba(255, 255, 255, 0.9);" />
+            </MudItem>
+            
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_gameMasterName" 
+                              Label="Your Name (Game Master)" 
+                              Variant="Variant.Outlined"
+                              Required="true"
+                              HelperText="You will manage this tournament"
+                              Style="background-color: rgba(255, 255, 255, 0.9);" />
+            </MudItem>
+            
+            <MudItem xs="12">
+                <MudSelect @bind-Value="_maxPlayers" 
+                           Label="Maximum Players" 
+                           Variant="Variant.Outlined"
+                           Style="background-color: rgba(255, 255, 255, 0.9);">
+                    <MudSelectItem Value="4">4 Players (Semi-finals start)</MudSelectItem>
+                    <MudSelectItem Value="8">8 Players (Quarter-finals start)</MudSelectItem>
+                    <MudSelectItem Value="16">16 Players (Round of 16 start)</MudSelectItem>
+                </MudSelect>
+                <MudText Typo="Typo.caption" Color="Color.Info" Class="mt-2">
+                    Tournament can start with at least @(_maxPlayers / 2) players
+                </MudText>
+            </MudItem>
+            
+            <MudItem xs="12" Class="d-flex justify-center gap-4 mt-4">
+                <MudButton Variant="Variant.Filled" 
+                           Color="Color.Error"
+                           Size="Size.Large"
+                           StartIcon="@Icons.Material.Filled.Cancel"
+                           OnClick="Cancel">
+                    Cancel
+                </MudButton>
+                
+                <MudButton Variant="Variant.Filled" 
+                           Color="Color.Success"
+                           Size="Size.Large"
+                           StartIcon="@Icons.Material.Filled.EmojiEvents"
+                           OnClick="CreateTournamentHandler"
+                           ButtonType="ButtonType.Button"
+                           Disabled="@(!IsFormValid)">
+                    Create Tournament
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+    
+    <MudPaper Elevation="2" Class="pa-4 mt-4" Style="background-color: rgba(255, 248, 220, 0.95);">
+        <MudText Typo="Typo.h6" Color="Color.Error" Class="mb-2">
+            🎅 Tournament Rules:
+        </MudText>
+        <MudList T="string" Dense="true">
+            <MudListItem T="string" Icon="@Icons.Material.Filled.CheckCircle">
+                <MudText Color="Color.Dark">Quarter-finals, Semi-finals, and Final rounds</MudText>
+            </MudListItem>
+            <MudListItem T="string" Icon="@Icons.Material.Filled.CheckCircle">
+                <MudText Color="Color.Dark">Each match is a complete Yatzy game</MudText>
+            </MudListItem>
+            <MudListItem T="string" Icon="@Icons.Material.Filled.CheckCircle">
+                <MudText Color="Color.Dark">Winners advance to the next round</MudText>
+            </MudListItem>
+            <MudListItem T="string" Icon="@Icons.Material.Filled.CheckCircle">
+                <MudText Color="Color.Dark">Game Master controls when to start matches</MudText>
+            </MudListItem>
+        </MudList>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private string _tournamentName = "";
+    private string _gameMasterName = "";
+    private int _maxPlayers = 8;
+    private string _errorMessage = "";
+
+    private bool IsFormValid => 
+        !string.IsNullOrWhiteSpace(_tournamentName) && 
+        !string.IsNullOrWhiteSpace(_gameMasterName);
+
+    private void CreateTournamentHandler()
+    {
+        try
+        {
+            _errorMessage = "";
+            
+            if (string.IsNullOrWhiteSpace(_tournamentName))
+            {
+                _errorMessage = "Tournament name is required";
+                return;
+            }
+            
+            if (string.IsNullOrWhiteSpace(_gameMasterName))
+            {
+                _errorMessage = "Game Master name is required";
+                return;
+            }
+            
+            var tournament = TournamentService.CreateTournament(
+                _tournamentName.Trim(),
+                _gameMasterName.Trim(),
+                _maxPlayers
+            );
+            
+            // Navigate to the tournament management page
+            NavigationManager.NavigateTo($"/manage-tournament/{tournament.Id}");
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to create tournament: {ex.Message}";
+        }
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/tournament-lobby");
+    }
+}

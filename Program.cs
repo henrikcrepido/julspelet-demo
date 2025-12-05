@@ -12,7 +12,9 @@ builder.Services.AddRazorComponents()
 builder.Services.AddMudServices();
 
 // Add game services
+// Using Singleton for TournamentService to share state across all connections
 // Using Scoped lifetime for Blazor Server to maintain state per user connection
+builder.Services.AddSingleton<TournamentService>();
 builder.Services.AddScoped<ScoringService>();
 builder.Services.AddScoped<GameService>();
 
