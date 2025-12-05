@@ -28,6 +28,10 @@ builder.Services.AddScoped<GameService>();
 builder.Services.AddScoped<INetworkService, SignalRNetworkService>();
 builder.Services.AddScoped<IGameSyncService, GameSyncService>();
 
+// Add security and validation services
+builder.Services.AddScoped<IMessageValidator, MessageValidator>();
+builder.Services.AddScoped<IMessageAuthenticator, MessageAuthenticator>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

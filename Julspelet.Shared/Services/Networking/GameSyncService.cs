@@ -7,19 +7,25 @@ namespace Julspelet.Shared.Services.Networking;
 /// <summary>
 /// Implementation of game state synchronization service.
 /// Works with any INetworkService implementation to sync game state across peers.
+/// Includes validation and anti-cheat protection.
 /// </summary>
 public class GameSyncService : IGameSyncService
 {
     private readonly INetworkService _networkService;
     private readonly ScoringService _scoringService;
+    private readonly IMessageValidator _validator;
     private long _messageSequence = 0;
 
     public event EventHandler<GameState>? GameStateUpdated;
 
-    public GameSyncService(INetworkService networkService, ScoringService scoringService)
+    public GameSyncService(
+        INetworkService networkService, 
+        ScoringService scoringService,
+        IMessageValidator validator)
     {
         _networkService = networkService;
         _scoringService = scoringService;
+        _validator = validator;
 
         // Subscribe to network messages
         _networkService.MessageReceived += OnMessageReceived;
@@ -61,19 +67,42 @@ public class GameSyncService : IGameSyncService
 
     public GameState? ApplyMessage(NetworkMessage message, GameState currentState)
     {
+        // Validate message timing (prevent replay attacks)
+        if (!_validator.ValidateMessageTiming(message))
+        {
+            Console.WriteLine($"Message rejected: Invalid timing from {message.SenderId}");
+            return currentState;
+        }
+
+        // Check rate limiting
+        var messageType = message.GetType().Name;
+        if (!_validator.CheckRateLimit(message.SenderId, messageType))
+        {
+            Console.WriteLine($"Message rejected: Rate limit exceeded for {message.SenderId}");
+            return currentState;
+        }
+
+        // Validate player action (if applicable)
+        if (!_validator.ValidatePlayerAction(message, currentState))
+        {
+            Console.WriteLine($"Message rejected: Invalid player action from {message.SenderId}");
+            return currentState;
+        }
+
         try
         {
             return message switch
             {
                 GameStateUpdateMessage update => ApplyGameStateUpdate(update, currentState),
-                DiceRollMessage roll => ApplyDiceRoll(roll, currentState),
-                ScoreSelectionMessage score => ApplyScoreSelection(score, currentState),
+                DiceRollMessage roll => ApplyDiceRollWithValidation(roll, currentState),
+                ScoreSelectionMessage score => ApplyScoreSelectionWithValidation(score, currentState),
                 TurnChangeMessage turn => ApplyTurnChange(turn, currentState),
                 _ => currentState // Unknown message type, return current state
             };
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            Console.WriteLine($"Error applying message: {ex.Message}");
             // If there's an error applying the message, return the current state
             return currentState;
         }
@@ -98,8 +127,15 @@ public class GameSyncService : IGameSyncService
         return currentState;
     }
 
-    private GameState ApplyDiceRoll(DiceRollMessage message, GameState currentState)
+    private GameState ApplyDiceRollWithValidation(DiceRollMessage message, GameState currentState)
     {
+        // Validate the dice roll for anti-cheat
+        if (!_validator.ValidateDiceRoll(message, currentState))
+        {
+            Console.WriteLine($"Invalid dice roll rejected from player {message.PlayerId}");
+            return currentState;
+        }
+
         // Update the dice values for the current player
         var currentPlayer = currentState.Players.ElementAtOrDefault(currentState.CurrentPlayerIndex);
         if (currentPlayer?.Id.ToString() == message.PlayerId)
@@ -120,8 +156,21 @@ public class GameSyncService : IGameSyncService
         return currentState;
     }
 
-    private GameState ApplyScoreSelection(ScoreSelectionMessage message, GameState currentState)
+    private GameState ApplyDiceRoll(DiceRollMessage message, GameState currentState)
     {
+        // Legacy method for compatibility - calls validated version
+        return ApplyDiceRollWithValidation(message, currentState);
+    }
+
+    private GameState ApplyScoreSelectionWithValidation(ScoreSelectionMessage message, GameState currentState)
+    {
+        // Validate the score selection for anti-cheat
+        if (!_validator.ValidateScoreSelection(message, currentState))
+        {
+            Console.WriteLine($"Invalid score selection rejected from player {message.PlayerId}");
+            return currentState;
+        }
+
         // Find the player and update their score
         var player = currentState.Players.FirstOrDefault(p => p.Id.ToString() == message.PlayerId);
         if (player != null)
@@ -137,6 +186,12 @@ public class GameSyncService : IGameSyncService
         }
 
         return currentState;
+    }
+
+    private GameState ApplyScoreSelection(ScoreSelectionMessage message, GameState currentState)
+    {
+        // Legacy method for compatibility - calls validated version
+        return ApplyScoreSelectionWithValidation(message, currentState);
     }
 
     private GameState ApplyTurnChange(TurnChangeMessage message, GameState currentState)
