@@ -1,5 +1,6 @@
 @page "/"
 @using Julspelet.Services
+@using Julspelet.Models
 @inject GameService GameService
 @inject NavigationManager Navigation
 @implements IDisposable
@@ -21,10 +22,38 @@
 
         @if (!GameService.GameState.IsGameStarted)
         {
+            @* Game Mode Selection *@
+            <MudCard Class="mb-4">
+                <MudCardContent>
+                    <MudText Typo="Typo.h6" Class="mb-3">Select Game Mode</MudText>
+                    <MudRadioGroup @bind-Value="selectedGameMode">
+                        <MudRadio Value="GameMode.SinglePlayer" Color="Color.Primary">
+                            <MudText>
+                                <strong>🎮 Single Player</strong> - Play alone and aim for the highest score!
+                            </MudText>
+                        </MudRadio>
+                        <MudRadio Value="GameMode.Multiplayer" Color="Color.Primary" Class="mt-2">
+                            <MudText>
+                                <strong>👥 Multiplayer</strong> - Compete against friends!
+                            </MudText>
+                        </MudRadio>
+                    </MudRadioGroup>
+                </MudCardContent>
+            </MudCard>
+
             @* Player Entry Form - Shows before game starts *@
             <MudCard Class="mb-4">
                 <MudCardContent>
-                    <MudText Typo="Typo.h6" Class="mb-4">Add Players (Minimum 2)</MudText>
+                    <MudText Typo="Typo.h6" Class="mb-4">
+                        @if (selectedGameMode == GameMode.SinglePlayer)
+                        {
+                            <text>Enter Your Name</text>
+                        }
+                        else
+                        {
+                            <text>Add Players (Minimum 2)</text>
+                        }
+                    </MudText>
                     
                     @* Input field for new player name *@
                     <MudTextField @bind-Value="newPlayerName" 
@@ -86,17 +115,23 @@
                 <MudButton Variant="Variant.Filled" 
                            Color="Color.Success" 
                            OnClick="StartGame"
-                           Disabled="GameService.GameState.Players.Count < 2"
+                           Disabled="!CanStartGame()"
                            FullWidth="true"
                            Size="Size.Large"
                            StartIcon="@Icons.Material.Filled.PlayArrow">
                     Start Game
                 </MudButton>
 
-                @if (GameService.GameState.Players.Count < 2)
+                @if (selectedGameMode == GameMode.SinglePlayer && GameService.GameState.Players.Count < 1)
                 {
                     <MudAlert Severity="Severity.Info" Class="mt-3">
-                        You need at least 2 players to start the game.
+                        Enter your name to start playing!
+                    </MudAlert>
+                }
+                else if (selectedGameMode == GameMode.Multiplayer && GameService.GameState.Players.Count < 2)
+                {
+                    <MudAlert Severity="Severity.Info" Class="mt-3">
+                        You need at least 2 players to start a multiplayer game.
                     </MudAlert>
                 }
             }
@@ -132,6 +167,7 @@
     // Local component state
     private string newPlayerName = string.Empty;
     private string errorMessage = string.Empty;
+    private GameMode selectedGameMode = GameMode.Multiplayer;
 
     /// <summary>
     /// Component lifecycle method - called when the component is initialized.
@@ -193,12 +229,23 @@
     }
 
     /// <summary>
-    /// Starts the game and navigates to the game board.
+    /// Checks if the game can be started based on the selected mode and player count.
+    /// </summary>
+    private bool CanStartGame()
+    {
+        if (selectedGameMode == GameMode.SinglePlayer)
+            return GameService.GameState.Players.Count >= 1;
+        else
+            return GameService.GameState.Players.Count >= 2;
+    }
+
+    /// <summary>
+    /// Starts the game with the selected mode and navigates to the game board.
     /// Shows Blazor's programmatic navigation using NavigationManager.
     /// </summary>
     private void StartGame()
     {
-        var success = GameService.StartGame();
+        var success = GameService.StartGame(selectedGameMode);
         
         if (success)
         {
@@ -208,7 +255,8 @@
         }
         else
         {
-            errorMessage = "Cannot start game. Need at least 2 players.";
+            var minPlayers = selectedGameMode == GameMode.SinglePlayer ? 1 : 2;
+            errorMessage = $"Cannot start game. Need at least {minPlayers} player(s).";
         }
     }
 

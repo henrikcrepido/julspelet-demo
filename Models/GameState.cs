@@ -1,6 +1,22 @@
 namespace Julspelet.Models;
 
 /// <summary>
+/// Game mode enumeration.
+/// </summary>
+public enum GameMode
+{
+    /// <summary>
+    /// Single player mode - play alone to achieve the highest score.
+    /// </summary>
+    SinglePlayer,
+    
+    /// <summary>
+    /// Multiplayer mode - compete against other players.
+    /// </summary>
+    Multiplayer
+}
+
+/// <summary>
 /// Represents the current state of the game.
 /// Manages players, current turn, dice rolls, and game progress.
 /// </summary>
@@ -43,6 +59,11 @@ public class GameState
     public bool IsGameComplete { get; set; }
 
     /// <summary>
+    /// The game mode (single player or multiplayer).
+    /// </summary>
+    public GameMode Mode { get; set; } = GameMode.Multiplayer;
+
+    /// <summary>
     /// Gets the current player whose turn it is.
     /// </summary>
     public Player? GetCurrentPlayer()
@@ -70,11 +91,16 @@ public class GameState
     }
 
     /// <summary>
-    /// Starts the game if there are at least 2 players.
+    /// Starts the game with the specified game mode.
     /// </summary>
-    public bool StartGame()
+    /// <param name="gameMode">The game mode to start (SinglePlayer or Multiplayer).</param>
+    public bool StartGame(GameMode gameMode = GameMode.Multiplayer)
     {
-        if (Players.Count < 2)
+        Mode = gameMode;
+        
+        // Single player requires 1 player, multiplayer requires 2+
+        var minPlayers = Mode == GameMode.SinglePlayer ? 1 : 2;
+        if (Players.Count < minPlayers)
             return false;
 
         IsGameStarted = true;

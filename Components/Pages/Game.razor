@@ -32,7 +32,23 @@
                 
                 @{
                     var winners = GameService.GameState.GetWinners();
-                    if (winners.Count == 1)
+                    if (GameService.GameState.Mode == GameMode.SinglePlayer)
+                    {
+                        var player = winners.FirstOrDefault();
+                        if (player != null)
+                        {
+                            <MudText Typo="Typo.h4" Class="mb-2">
+                                ⭐ Great Job, @player.Name! ⭐
+                            </MudText>
+                            <MudText Typo="Typo.h5" Color="Color.Secondary">
+                                Final Score: @player.TotalScore points
+                            </MudText>
+                            <MudText Typo="Typo.body1" Color="Color.Info" Class="mt-2">
+                                @GetScoreMessage(player.TotalScore)
+                            </MudText>
+                        }
+                    }
+                    else if (winners.Count == 1)
                     {
                         <MudText Typo="Typo.h4" Class="mb-2">
                             🏆 Winner: @winners[0].Name! 🏆
@@ -125,9 +141,18 @@
             <MudItem xs="12" md="8">
                 @* Current Player Info *@
                 <MudPaper Elevation="3" Class="pa-4 mb-4">
-                    <MudText Typo="Typo.h5" Color="Color.Primary">
-                        Current Turn: @GameService.GameState.GetCurrentPlayer()?.Name
-                    </MudText>
+                    @if (GameService.GameState.Mode == GameMode.SinglePlayer)
+                    {
+                        <MudText Typo="Typo.h5" Color="Color.Primary">
+                            Playing: @GameService.GameState.GetCurrentPlayer()?.Name
+                        </MudText>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.h5" Color="Color.Primary">
+                            Current Turn: @GameService.GameState.GetCurrentPlayer()?.Name
+                        </MudText>
+                    }
                     <MudText Typo="Typo.body1" Color="Color.Secondary">
                         Roll @GameService.GameState.RollsThisTurn of @GameState.MaxRollsPerTurn
                     </MudText>
@@ -731,6 +756,22 @@
             ScoreCategory.FullHouse,
             ScoreCategory.Chance,
             ScoreCategory.Yatzy
+        };
+    }
+
+    /// <summary>
+    /// Gets an encouraging message based on the player's final score in single player mode.
+    /// </summary>
+    private string GetScoreMessage(int score)
+    {
+        return score switch
+        {
+            >= 300 => "🌟 Outstanding! You're a Yatzy master!",
+            >= 250 => "🎉 Excellent performance! Amazing skill!",
+            >= 200 => "👏 Great job! Well played!",
+            >= 150 => "👍 Good game! Keep practicing!",
+            >= 100 => "💪 Nice effort! You're improving!",
+            _ => "🎲 Keep rolling! Every game makes you better!"
         };
     }
 }

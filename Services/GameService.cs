@@ -69,11 +69,12 @@ public class GameService
     }
 
     /// <summary>
-    /// Starts the game.
+    /// Starts the game with the specified game mode.
     /// </summary>
-    public bool StartGame()
+    /// <param name="gameMode">The game mode (SinglePlayer or Multiplayer).</param>
+    public bool StartGame(GameMode gameMode = GameMode.Multiplayer)
     {
-        var result = GameState.StartGame();
+        var result = GameState.StartGame(gameMode);
         if (result)
         {
             NotifyStateChanged();
