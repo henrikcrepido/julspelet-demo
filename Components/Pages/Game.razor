@@ -1,8 +1,10 @@
 @page "/game"
 @using Julspelet.Services
 @using Julspelet.Models
+@using Microsoft.JSInterop
 @inject GameService GameService
 @inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
 @implements IDisposable
 
 @* 
@@ -154,9 +156,15 @@
                                 <MudPaper Elevation="@(die.IsHeld ? 8 : 2)" 
                                           Class="@GetDiceClass(die)"
                                           @onclick="@(() => ToggleDie(index))"
-                                          Style="@(canHold ? "cursor: pointer;" : "cursor: default;")">
-                                    <div class="dice-value">
-                                        @GetDiceEmoji(die.Value)
+                                          Style="@(canHold ? "cursor: pointer;" : "cursor: default;")"
+                                          data-dice-index="@index">
+                                    <div class="dice-value @(die.IsRolling ? "rolling" : "")" data-value="@die.Value">
+                                        @{
+                                            var displayValue = die.IsRolling && _intermediateDiceValues.ContainsKey(index)
+                                                ? _intermediateDiceValues[index]
+                                                : die.Value;
+                                        }
+                                        @GetDiceEmoji(displayValue)
                                     </div>
                                 </MudPaper>
                                 @if (die.IsHeld)
@@ -358,40 +366,85 @@
     .dice-container {
         display: flex;
         justify-content: center;
-        gap: 1rem;
+        gap: 1.5rem;
         flex-wrap: wrap;
         margin: 1rem 0;
+        perspective: 1000px;
     }
 
     .dice-wrapper {
         display: flex;
         flex-direction: column;
         align-items: center;
+        perspective: 1000px;
     }
 
     .dice {
-        width: 80px;
-        height: 80px;
+        width: 100px;
+        height: 100px;
         display: flex;
         align-items: center;
         justify-content: center;
-        border-radius: 12px;
+        border-radius: 18px;
         transition: all 0.3s ease;
-        background: white;
+        background: linear-gradient(135deg, #ffffff 0%, #f8f8f8 50%, #e8e8e8 100%);
+        position: relative;
+        overflow: visible;
+        border: 2px solid #d0d0d0;
+        box-shadow: 
+            inset -3px -3px 8px rgba(0, 0, 0, 0.15),
+            inset 3px 3px 8px rgba(255, 255, 255, 0.9),
+            0 6px 12px rgba(0, 0, 0, 0.2),
+            0 2px 4px rgba(0, 0, 0, 0.1);
+        transform-style: preserve-3d;
+    }
+
+    .dice::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border-radius: 16px;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, transparent 50%, rgba(0, 0, 0, 0.05) 100%);
+        pointer-events: none;
     }
 
     .dice-held {
-        background: #fff3cd !important;
-        border: 3px solid #ffc107;
+        background: linear-gradient(135deg, #fff9e6 0%, #ffe8a1 50%, #ffd700 100%) !important;
+        border: 3px solid #ffb700;
+        box-shadow: 
+            inset -3px -3px 8px rgba(139, 90, 0, 0.2),
+            inset 3px 3px 8px rgba(255, 255, 200, 0.9),
+            0 0 20px rgba(255, 193, 7, 0.6),
+            0 6px 12px rgba(255, 193, 7, 0.3),
+            0 2px 4px rgba(0, 0, 0, 0.2);
     }
 
-    .dice:hover {
-        transform: scale(1.05);
+    .dice:not(.dice-rolling):hover {
+        transform: scale(1.05) translateY(-2px);
+        box-shadow: 
+            inset -3px -3px 8px rgba(0, 0, 0, 0.15),
+            inset 3px 3px 8px rgba(255, 255, 255, 0.9),
+            0 8px 16px rgba(0, 0, 0, 0.25),
+            0 4px 8px rgba(0, 0, 0, 0.15);
     }
 
     .dice-value {
-        font-size: 3rem;
+        font-size: 5.5rem;
+        line-height: 1;
         user-select: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        transition: transform 0.2s ease;
+        filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.2));
+        position: relative;
+        z-index: 1;
+        padding: 2px;
     }
 
     .scorecard-table {
@@ -464,15 +517,125 @@
     public void Dispose()
     {
         GameService.OnGameStateChanged -= StateHasChanged;
+        StopSpriteStripAnimation();
+    }
+
+    private Random _animRandom = new Random();
+    private System.Threading.Timer? _spriteTimer;
+    private Dictionary<int, int> _intermediateDiceValues = new Dictionary<int, int>();
+
+    /// <summary>
+    /// Rolls the dice for the current turn with enhanced sprite strip animation.
+    /// Uses JavaScript interop to coordinate animation timing with actual face changes.
+    /// </summary>
+    private async Task RollDice()
+    {
+        // Set all non-held dice to rolling state
+        var diceToRoll = GameService.GameState.DiceSet.Dice.Where(d => !d.IsHeld).ToList();
+        var rollingIndices = GameService.GameState.DiceSet.Dice
+            .Select((die, index) => new { die, index })
+            .Where(x => !x.die.IsHeld)
+            .Select(x => x.index)
+            .ToList();
+        
+        foreach (var die in diceToRoll)
+        {
+            die.IsRolling = true;
+        }
+        StateHasChanged();
+
+        try
+        {
+            // Start the sprite strip animation with rapid face changes
+            StartSpriteStripAnimation(rollingIndices);
+            
+            // Start the CSS animation
+            await JSRuntime.InvokeVoidAsync("diceAnimation.startRoll", diceToRoll.Count);
+            
+            // Roll the dice to get final values (but don't show yet)
+            GameService.RollDice();
+            
+            // Wait for animation to complete
+            await JSRuntime.InvokeVoidAsync("diceAnimation.waitForAnimation");
+            
+            // Stop sprite animation
+            StopSpriteStripAnimation();
+            
+            // Check for high rolls (5s and 6s) and celebrate
+            var highRollIndices = GameService.GameState.DiceSet.Dice
+                .Select((die, index) => new { die, index })
+                .Where(x => !x.die.IsHeld && (x.die.Value == 5 || x.die.Value == 6))
+                .Select(x => x.index)
+                .ToArray();
+            
+            if (highRollIndices.Any())
+            {
+                await JSRuntime.InvokeVoidAsync("diceAnimation.celebrateHighRoll", (object)highRollIndices);
+            }
+        }
+        catch (JSException ex)
+        {
+            // Handle JavaScript errors gracefully
+            Console.WriteLine($"Animation error: {ex.Message}");
+            StopSpriteStripAnimation();
+        }
+        finally
+        {
+            // Clear rolling state and intermediate values
+            foreach (var die in diceToRoll)
+            {
+                die.IsRolling = false;
+            }
+            _intermediateDiceValues.Clear();
+            StateHasChanged();
+        }
     }
 
     /// <summary>
-    /// Rolls the dice for the current turn.
+    /// Starts rapid face value changes for sprite strip effect with deceleration.
+    /// Creates a realistic settling effect by progressively slowing down face changes.
     /// </summary>
-    private void RollDice()
+    private void StartSpriteStripAnimation(List<int> diceIndices)
     {
-        GameService.RollDice();
-        StateHasChanged(); // Explicitly trigger re-render
+        var startTime = DateTime.Now;
+        var duration = 600; // 600ms total
+        
+        _spriteTimer = new System.Threading.Timer(_ =>
+        {
+            var elapsed = (DateTime.Now - startTime).TotalMilliseconds;
+            if (elapsed >= duration)
+            {
+                return;
+            }
+            
+            // Calculate progress (0.0 to 1.0)
+            var progress = elapsed / duration;
+            
+            // Update intermediate values for rolling dice
+            foreach (var index in diceIndices)
+            {
+                // Use quadratic easing for deceleration
+                // Early in animation: frequent changes
+                // Late in animation: rare changes
+                var changeThreshold = 1.0 - (progress * progress); // Quadratic ease-out
+                
+                if (_animRandom.NextDouble() < changeThreshold)
+                {
+                    _intermediateDiceValues[index] = _animRandom.Next(1, 7);
+                }
+            }
+            
+            InvokeAsync(StateHasChanged);
+        }, null, 0, 16); // ~60fps for smooth animation
+    }
+
+    /// <summary>
+    /// Stops the sprite strip animation timer.
+    /// </summary>
+    private void StopSpriteStripAnimation()
+    {
+        _spriteTimer?.Dispose();
+        _spriteTimer = null;
     }
 
     /// <summary>
@@ -490,11 +653,14 @@
     }
 
     /// <summary>
-    /// Gets the CSS class for a die based on its held state.
+    /// Gets the CSS class for a die based on its held and rolling state.
     /// </summary>
     private string GetDiceClass(Die die)
     {
-        return die.IsHeld ? "dice dice-held" : "dice";
+        var classes = new List<string> { "dice" };
+        if (die.IsHeld) classes.Add("dice-held");
+        if (die.IsRolling) classes.Add("dice-rolling");
+        return string.Join(" ", classes);
     }
 
     /// <summary>

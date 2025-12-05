@@ -17,6 +17,11 @@ public class Die
     public bool IsHeld { get; set; }
 
     /// <summary>
+    /// Indicates whether the die is currently animating (rolling).
+    /// </summary>
+    public bool IsRolling { get; set; }
+
+    /// <summary>
     /// Rolls the die to get a random value between 1 and 6.
     /// Only rolls if the die is not held.
     /// </summary>
