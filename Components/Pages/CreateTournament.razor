@@ -3,7 +3,6 @@
 @using Julspelet.Services
 @inject TournamentService TournamentService
 @inject NavigationManager NavigationManager
-@rendermode InteractiveServer
 
 <PageTitle>Create Tournament - Julspelet</PageTitle>
 
@@ -108,7 +107,7 @@
         !string.IsNullOrWhiteSpace(_tournamentName) && 
         !string.IsNullOrWhiteSpace(_gameMasterName);
 
-    private void CreateTournamentHandler()
+    private async Task CreateTournamentHandler()
     {
         try
         {
@@ -117,12 +116,14 @@
             if (string.IsNullOrWhiteSpace(_tournamentName))
             {
                 _errorMessage = "Tournament name is required";
+                StateHasChanged();
                 return;
             }
             
             if (string.IsNullOrWhiteSpace(_gameMasterName))
             {
                 _errorMessage = "Game Master name is required";
+                StateHasChanged();
                 return;
             }
             
@@ -132,12 +133,16 @@
                 _maxPlayers
             );
             
+            // Give a brief moment for the service to register the tournament
+            await Task.Delay(100);
+            
             // Navigate to the tournament management page
-            NavigationManager.NavigateTo($"/manage-tournament/{tournament.Id}");
+            NavigationManager.NavigateTo($"/manage-tournament/{tournament.Id}", forceLoad: false);
         }
         catch (Exception ex)
         {
             _errorMessage = $"Failed to create tournament: {ex.Message}";
+            StateHasChanged();
         }
     }
 
