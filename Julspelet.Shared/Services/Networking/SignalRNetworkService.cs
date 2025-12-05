@@ -26,6 +26,12 @@ public class SignalRNetworkService : INetworkService
     public event EventHandler<PeerInfo>? PeerDisconnected;
     public event EventHandler<ConnectionState>? ConnectionStateChanged;
 
+    public Task InitializeAsync()
+    {
+        // SignalR initialization happens in StartAsync
+        return Task.CompletedTask;
+    }
+
     public async Task<List<GameSession>> DiscoverSessionsAsync(int timeoutSeconds = 5)
     {
         // For SignalR, discovery happens through a central server
@@ -46,7 +52,7 @@ public class SignalRNetworkService : INetworkService
         }
     }
 
-    public async Task<GameSession> CreateSessionAsync(string sessionName, int maxPlayers = 6, string? password = null)
+    public async Task<GameSession> CreateSessionAsync(string hostName, int maxPlayers, NetworkType networkType)
     {
         if (_hubConnection == null)
             throw new InvalidOperationException("Network service not started");
@@ -54,12 +60,13 @@ public class SignalRNetworkService : INetworkService
         _currentSession = new GameSession
         {
             SessionId = Guid.NewGuid().ToString(),
-            SessionName = sessionName,
+            SessionName = $"{hostName}'s Game",
             HostId = PeerId,
-            HostName = sessionName, // Will be set by the caller
+            HostName = hostName,
             MaxPlayers = maxPlayers,
-            Password = password,
-            NetworkType = NetworkType.SignalR
+            NetworkType = networkType,
+            LocalPeerId = PeerId,
+            IsHost = true
         };
 
         IsHost = true;
@@ -69,6 +76,19 @@ public class SignalRNetworkService : INetworkService
 
         SetConnectionState(ConnectionState.Connected);
         return _currentSession;
+    }
+
+    public async Task JoinSessionAsync(string sessionId)
+    {
+        if (_hubConnection == null)
+            throw new InvalidOperationException("Network service not started");
+
+        // Get session info from hub
+        var session = await _hubConnection.InvokeAsync<GameSession>("GetSession", sessionId);
+        if (session == null)
+            throw new InvalidOperationException($"Session {sessionId} not found");
+
+        await JoinSessionAsync(session, "Player", null);
     }
 
     public async Task JoinSessionAsync(GameSession session, string playerName, string? password = null)
@@ -131,7 +151,7 @@ public class SignalRNetworkService : INetworkService
         await _hubConnection.InvokeAsync("SendMessage", _currentSession.SessionId, json);
     }
 
-    public async Task SendMessageToAsync(string peerId, NetworkMessage message)
+    public async Task SendMessageAsync(NetworkMessage message, string peerId)
     {
         if (_hubConnection == null)
             return;
@@ -146,9 +166,9 @@ public class SignalRNetworkService : INetworkService
         return new List<PeerInfo>(_connectedPeers);
     }
 
-    public GameSession? GetCurrentSession()
+    public Task<GameSession?> GetCurrentSessionAsync()
     {
-        return _currentSession;
+        return Task.FromResult(_currentSession);
     }
 
     public async Task StartAsync()

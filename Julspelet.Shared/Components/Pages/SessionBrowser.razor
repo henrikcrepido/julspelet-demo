@@ -1,0 +1,386 @@
+@page "/session-browser"
+@using Julspelet.Shared.Services
+@using Julspelet.Shared.Services.Networking
+@using Julspelet.Shared.Models
+@using Julspelet.Shared.Models.Networking
+@inject INetworkService NetworkService
+@inject NavigationManager Navigation
+
+<PageTitle>Join Game Session</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
+    <MudPaper Elevation="3" Class="pa-6">
+        <MudText Typo="Typo.h4" Class="mb-4">🎮 Join Game Session</MudText>
+
+        @if (!isInitialized)
+        {
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+            <MudText>Initializing network...</MudText>
+        }
+        else if (currentSession != null)
+        {
+            <MudAlert Severity="Severity.Info" Class="mb-4">
+                You are already in a session. Leave current session to join another.
+            </MudAlert>
+            <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="LeaveSession">
+                Leave Current Session
+            </MudButton>
+        }
+        else
+        {
+            <MudTabs Elevation="2" Rounded="true" Color="Color.Primary">
+                <MudTabPanel Text="Discover Sessions" Icon="@Icons.Material.Filled.Search">
+                    <div class="pa-4">
+                        <MudText Typo="Typo.h6" Class="mb-3">Available Sessions</MudText>
+                        
+                        @if (isDiscovering)
+                        {
+                            <div class="d-flex align-center mb-4">
+                                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                                <MudText>Discovering sessions...</MudText>
+                            </div>
+                        }
+
+                        @if (availableSessions.Any())
+                        {
+                            <MudTable Items="@availableSessions" Hover="true" Breakpoint="Breakpoint.Sm">
+                                <HeaderContent>
+                                    <MudTh>Host</MudTh>
+                                    <MudTh>Players</MudTh>
+                                    <MudTh>Type</MudTh>
+                                    <MudTh>Actions</MudTh>
+                                </HeaderContent>
+                                <RowTemplate>
+                                    <MudTd DataLabel="Host">@context.HostName</MudTd>
+                                    <MudTd DataLabel="Players">@context.PlayerCount / @context.MaxPlayers</MudTd>
+                                    <MudTd DataLabel="Type">
+                                        <MudChip T="string" Size="Size.Small" Color="@GetNetworkTypeColor(context.NetworkType)">
+                                            @context.NetworkType
+                                        </MudChip>
+                                    </MudTd>
+                                    <MudTd DataLabel="Actions">
+                                        <MudButton Variant="Variant.Filled" 
+                                                   Color="Color.Primary" 
+                                                   Size="Size.Small"
+                                                   Disabled="@(context.PlayerCount >= context.MaxPlayers)"
+                                                   OnClick="@(() => JoinSession(context.SessionId))">
+                                            @(context.PlayerCount >= context.MaxPlayers ? "Full" : "Join")
+                                        </MudButton>
+                                    </MudTd>
+                                </RowTemplate>
+                            </MudTable>
+                        }
+                        else
+                        {
+                            <MudAlert Severity="Severity.Info">
+                                No sessions found. Ask a friend to host a game or create your own!
+                            </MudAlert>
+                        }
+
+                        <MudButton Variant="Variant.Outlined" 
+                                   Color="Color.Primary" 
+                                   StartIcon="@Icons.Material.Filled.Refresh"
+                                   OnClick="DiscoverSessions"
+                                   Disabled="@isDiscovering"
+                                   Class="mt-4">
+                            Refresh
+                        </MudButton>
+                    </div>
+                </MudTabPanel>
+
+                <MudTabPanel Text="Join by Code" Icon="@Icons.Material.Filled.Pin">
+                    <div class="pa-4">
+                        <MudText Typo="Typo.h6" Class="mb-3">Enter Session Code</MudText>
+                        
+                        <MudTextField @bind-Value="sessionCode" 
+                                      Label="Session Code" 
+                                      Variant="Variant.Outlined"
+                                      MaxLength="10"
+                                      Immediate="true"
+                                      HelperText="Enter the code provided by the host"
+                                      Class="mb-4" />
+
+                        <MudButton Variant="Variant.Filled" 
+                                   Color="Color.Primary"
+                                   OnClick="JoinByCode"
+                                   Disabled="@(string.IsNullOrWhiteSpace(sessionCode) || isJoining)">
+                            @(isJoining ? "Joining..." : "Join Session")
+                        </MudButton>
+                    </div>
+                </MudTabPanel>
+
+                <MudTabPanel Text="Host Session" Icon="@Icons.Material.Filled.Add">
+                    <div class="pa-4">
+                        <MudText Typo="Typo.h6" Class="mb-3">Create New Session</MudText>
+                        
+                        <MudTextField @bind-Value="hostName" 
+                                      Label="Your Name" 
+                                      Variant="Variant.Outlined"
+                                      Required="true"
+                                      Class="mb-3" />
+
+                        <MudSelect @bind-Value="selectedNetworkType" 
+                                   Label="Connection Type" 
+                                   Variant="Variant.Outlined"
+                                   Class="mb-3">
+                            <MudSelectItem Value="@NetworkType.SignalR">SignalR (Web)</MudSelectItem>
+                            <MudSelectItem Value="@NetworkType.LocalNetwork">Local Network</MudSelectItem>
+                        </MudSelect>
+
+                        <MudNumericField @bind-Value="maxPlayers" 
+                                         Label="Max Players" 
+                                         Variant="Variant.Outlined"
+                                         Min="2"
+                                         Max="8"
+                                         Class="mb-4" />
+
+                        <MudButton Variant="Variant.Filled" 
+                                   Color="Color.Success"
+                                   StartIcon="@Icons.Material.Filled.AddCircle"
+                                   OnClick="CreateSession"
+                                   Disabled="@(string.IsNullOrWhiteSpace(hostName) || isCreating)">
+                            @(isCreating ? "Creating..." : "Create & Host")
+                        </MudButton>
+                    </div>
+                </MudTabPanel>
+            </MudTabs>
+        }
+
+        <MudDivider Class="my-4" />
+        
+        <MudButton Variant="Variant.Text" 
+                   Color="Color.Default"
+                   StartIcon="@Icons.Material.Filled.ArrowBack"
+                   Href="/">
+            Back to Home
+        </MudButton>
+    </MudPaper>
+
+    @if (connectedPeers.Any())
+    {
+        <MudPaper Elevation="3" Class="pa-6 mt-4">
+            <MudText Typo="Typo.h5" Class="mb-3">Connected Players (@connectedPeers.Count)</MudText>
+            <MudList T="string">
+                @foreach (var peer in connectedPeers)
+                {
+                    <MudListItem T="string">
+                        <div class="d-flex align-center justify-space-between">
+                            <div>
+                                <MudText Typo="Typo.body1">@peer.DisplayName</MudText>
+                                <MudText Typo="Typo.caption">@peer.PeerId.Substring(0, 8)...</MudText>
+                            </div>
+                            <MudChip T="string" Size="Size.Small" Color="@GetConnectionStateColor(peer.State)">
+                                @peer.State
+                            </MudChip>
+                        </div>
+                    </MudListItem>
+                }
+            </MudList>
+        </MudPaper>
+    }
+</MudContainer>
+
+<MudMessageBox @ref="errorBox" Title="Error" CancelText="OK">
+    <MessageContent>
+        @errorMessage
+    </MessageContent>
+</MudMessageBox>
+
+@code {
+    private bool isInitialized = false;
+    private bool isDiscovering = false;
+    private bool isJoining = false;
+    private bool isCreating = false;
+    
+    private GameSession? currentSession;
+    private List<SessionInfo> availableSessions = new();
+    private List<PeerInfo> connectedPeers = new();
+    
+    private string sessionCode = "";
+    private string hostName = "";
+    private NetworkType selectedNetworkType = NetworkType.SignalR;
+    private int maxPlayers = 4;
+    
+    private MudMessageBox? errorBox;
+    private string errorMessage = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // Subscribe to network events
+            NetworkService.PeerConnected += OnPeerConnected;
+            NetworkService.PeerDisconnected += OnPeerDisconnected;
+
+            // Initialize network service
+            await NetworkService.InitializeAsync();
+            
+            // Check if already in a session
+            currentSession = await NetworkService.GetCurrentSessionAsync();
+            
+            isInitialized = true;
+            
+            // Auto-discover sessions
+            await DiscoverSessions();
+        }
+        catch (Exception ex)
+        {
+            await ShowError($"Failed to initialize: {ex.Message}");
+        }
+    }
+
+    private async Task DiscoverSessions()
+    {
+        if (isDiscovering) return;
+        
+        isDiscovering = true;
+        try
+        {
+            var sessions = await NetworkService.DiscoverSessionsAsync();
+            availableSessions = sessions.Select(s => new SessionInfo
+            {
+                SessionId = s.SessionId,
+                HostName = s.HostName,
+                PlayerCount = s.CurrentPlayers,
+                MaxPlayers = s.MaxPlayers,
+                NetworkType = s.NetworkType
+            }).ToList();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await ShowError($"Discovery failed: {ex.Message}");
+        }
+        finally
+        {
+            isDiscovering = false;
+        }
+    }
+
+    private async Task JoinSession(string sessionId)
+    {
+        if (isJoining) return;
+        
+        isJoining = true;
+        try
+        {
+            await NetworkService.JoinSessionAsync(sessionId);
+            currentSession = await NetworkService.GetCurrentSessionAsync();
+            
+            // Navigate to game lobby
+            Navigation.NavigateTo($"/lobby/{sessionId}");
+        }
+        catch (Exception ex)
+        {
+            await ShowError($"Failed to join session: {ex.Message}");
+        }
+        finally
+        {
+            isJoining = false;
+        }
+    }
+
+    private async Task JoinByCode()
+    {
+        await JoinSession(sessionCode);
+    }
+
+    private async Task CreateSession()
+    {
+        if (isCreating || string.IsNullOrWhiteSpace(hostName)) return;
+        
+        isCreating = true;
+        try
+        {
+            var session = await NetworkService.CreateSessionAsync(hostName, maxPlayers, selectedNetworkType);
+            currentSession = session;
+            
+            // Navigate to host lobby
+            Navigation.NavigateTo($"/lobby/{session.SessionId}");
+        }
+        catch (Exception ex)
+        {
+            await ShowError($"Failed to create session: {ex.Message}");
+        }
+        finally
+        {
+            isCreating = false;
+        }
+    }
+
+    private async Task LeaveSession()
+    {
+        try
+        {
+            await NetworkService.LeaveSessionAsync();
+            currentSession = null;
+            connectedPeers.Clear();
+            await DiscoverSessions();
+        }
+        catch (Exception ex)
+        {
+            await ShowError($"Failed to leave session: {ex.Message}");
+        }
+    }
+
+    private void OnPeerConnected(object? sender, PeerInfo peer)
+    {
+        if (!connectedPeers.Any(p => p.PeerId == peer.PeerId))
+        {
+            connectedPeers.Add(peer);
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void OnPeerDisconnected(object? sender, PeerInfo peer)
+    {
+        connectedPeers.RemoveAll(p => p.PeerId == peer.PeerId);
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ShowError(string message)
+    {
+        errorMessage = message;
+        if (errorBox != null)
+        {
+            await errorBox.ShowAsync();
+        }
+    }
+
+    private Color GetNetworkTypeColor(NetworkType type)
+    {
+        return type switch
+        {
+            NetworkType.SignalR => Color.Primary,
+            NetworkType.LocalNetwork => Color.Success,
+            _ => Color.Default
+        };
+    }
+
+    private Color GetConnectionStateColor(ConnectionState state)
+    {
+        return state switch
+        {
+            ConnectionState.Connected => Color.Success,
+            ConnectionState.Connecting => Color.Warning,
+            ConnectionState.Disconnected => Color.Error,
+            _ => Color.Default
+        };
+    }
+
+    public void Dispose()
+    {
+        NetworkService.PeerConnected -= OnPeerConnected;
+        NetworkService.PeerDisconnected -= OnPeerDisconnected;
+    }
+
+    // Helper class for session info display
+    private class SessionInfo
+    {
+        public string SessionId { get; set; } = "";
+        public string HostName { get; set; } = "";
+        public int PlayerCount { get; set; }
+        public int MaxPlayers { get; set; }
+        public NetworkType NetworkType { get; set; }
+    }
+}

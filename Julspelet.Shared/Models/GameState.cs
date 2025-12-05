@@ -13,7 +13,17 @@ public enum GameMode
     /// <summary>
     /// Multiplayer mode - compete against other players.
     /// </summary>
-    Multiplayer
+    Multiplayer,
+    
+    /// <summary>
+    /// Classic Yatzy mode.
+    /// </summary>
+    Classic,
+    
+    /// <summary>
+    /// Tournament bracket mode.
+    /// </summary>
+    Tournament
 }
 
 /// <summary>

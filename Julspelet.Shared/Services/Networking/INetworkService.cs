@@ -52,13 +52,24 @@ public interface INetworkService
     Task<List<GameSession>> DiscoverSessionsAsync(int timeoutSeconds = 5);
 
     /// <summary>
+    /// Initializes the network service.
+    /// </summary>
+    Task InitializeAsync();
+
+    /// <summary>
     /// Creates a new game session as the host.
     /// </summary>
-    /// <param name="sessionName">Name for the session</param>
+    /// <param name="hostName">Name of the host player</param>
     /// <param name="maxPlayers">Maximum number of players</param>
-    /// <param name="password">Optional password for private sessions</param>
+    /// <param name="networkType">Type of network connection</param>
     /// <returns>The created game session</returns>
-    Task<GameSession> CreateSessionAsync(string sessionName, int maxPlayers = 6, string? password = null);
+    Task<GameSession> CreateSessionAsync(string hostName, int maxPlayers, NetworkType networkType);
+
+    /// <summary>
+    /// Joins an existing game session by session ID.
+    /// </summary>
+    /// <param name="sessionId">ID of the session to join</param>
+    Task JoinSessionAsync(string sessionId);
 
     /// <summary>
     /// Joins an existing game session.
@@ -82,9 +93,9 @@ public interface INetworkService
     /// <summary>
     /// Sends a message to a specific peer.
     /// </summary>
-    /// <param name="peerId">ID of the target peer</param>
     /// <param name="message">The message to send</param>
-    Task SendMessageToAsync(string peerId, NetworkMessage message);
+    /// <param name="peerId">ID of the target peer</param>
+    Task SendMessageAsync(NetworkMessage message, string peerId);
 
     /// <summary>
     /// Gets information about all connected peers.
@@ -94,7 +105,7 @@ public interface INetworkService
     /// <summary>
     /// Gets the current session information.
     /// </summary>
-    GameSession? GetCurrentSession();
+    Task<GameSession?> GetCurrentSessionAsync();
 
     /// <summary>
     /// Starts the network service and begins listening for connections (for hosts).

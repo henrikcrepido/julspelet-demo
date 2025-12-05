@@ -65,6 +65,16 @@ public class GameSession
     /// Whether the session allows spectators.
     /// </summary>
     public bool AllowSpectators { get; set; }
+
+    /// <summary>
+    /// Local peer ID for this device.
+    /// </summary>
+    public string LocalPeerId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Whether this device is the host of the session.
+    /// </summary>
+    public bool IsHost { get; set; }
 }
 
 /// <summary>
@@ -76,6 +86,11 @@ public enum NetworkType
     /// Local network (WiFi/LAN) using UDP/TCP sockets.
     /// </summary>
     Local,
+
+    /// <summary>
+    /// Local network (WiFi/LAN) using UDP/TCP sockets (alias for Local).
+    /// </summary>
+    LocalNetwork,
 
     /// <summary>
     /// Internet connection using relay server or NAT traversal.

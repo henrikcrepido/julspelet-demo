@@ -1,0 +1,368 @@
+@page "/lobby/{SessionId}"
+@using Julspelet.Shared.Services
+@using Julspelet.Shared.Services.Networking
+@using Julspelet.Shared.Models
+@using Julspelet.Shared.Models.Networking
+@inject INetworkService NetworkService
+@inject IGameSyncService GameSyncService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>Game Lobby</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudGrid>
+        <!-- Session Info Panel -->
+        <MudItem xs="12" md="8">
+            <MudPaper Elevation="3" Class="pa-6">
+                <div class="d-flex align-center justify-space-between mb-4">
+                    <MudText Typo="Typo.h4">🎮 Game Lobby</MudText>
+                    <MudChip T="string" Color="@(isHost ? Color.Warning : Color.Info)" Size="Size.Large">
+                        @(isHost ? "👑 Host" : "🎯 Player")
+                    </MudChip>
+                </div>
+
+                @if (currentSession != null)
+                {
+                    <MudAlert Severity="Severity.Info" Class="mb-4">
+                        <strong>Session Code:</strong> @currentSession.SessionId.Substring(0, 8).ToUpper()
+                    </MudAlert>
+
+                    <MudText Typo="Typo.h6" Class="mb-3">Players (@players.Count/@maxPlayers)</MudText>
+                    
+                    <MudList T="string">
+                        @foreach (var player in players)
+                        {
+                            <MudListItem T="string">
+                                <div class="d-flex align-center justify-space-between">
+                                    <div class="d-flex align-center">
+                                        @if (player.Id.ToString() == currentSession.HostId)
+                                        {
+                                            <MudIcon Icon="@Icons.Material.Filled.Star" Color="Color.Warning" Class="mr-2" />
+                                        }
+                                        <div>
+                                            <MudText Typo="Typo.body1">@player.Name</MudText>
+                                            <MudText Typo="Typo.caption">
+                                                @(player.Id.ToString() == localPlayerId ? "You" : "")
+                                            </MudText>
+                                        </div>
+                                    </div>
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Success">Ready</MudChip>
+                                </div>
+                            </MudListItem>
+                        }
+                        
+                        @for (int i = players.Count; i < maxPlayers; i++)
+                        {
+                            <MudListItem T="string">
+                                <div class="d-flex align-center">
+                                    <MudIcon Icon="@Icons.Material.Filled.PersonAddAlt" Class="mr-2" Color="Color.Default" />
+                                    <MudText Typo="Typo.body1" Color="Color.Default">Waiting for player...</MudText>
+                                </div>
+                            </MudListItem>
+                        }
+                    </MudList>
+
+                    @if (isHost)
+                    {
+                        <MudDivider Class="my-4" />
+                        
+                        <MudText Typo="Typo.h6" Class="mb-3">Game Settings</MudText>
+                        
+                        <MudSelect @bind-Value="gameMode" Label="Game Mode" Variant="Variant.Outlined" Class="mb-3">
+                            <MudSelectItem Value="@GameMode.Classic">Classic Yatzy</MudSelectItem>
+                            <MudSelectItem Value="@GameMode.Tournament">Tournament</MudSelectItem>
+                        </MudSelect>
+
+                        <MudNumericField @bind-Value="roundsCount" 
+                                         Label="Number of Rounds" 
+                                         Variant="Variant.Outlined"
+                                         Min="1"
+                                         Max="5"
+                                         Class="mb-4" />
+
+                        <MudButton Variant="Variant.Filled" 
+                                   Color="Color.Success"
+                                   Size="Size.Large"
+                                   FullWidth="true"
+                                   StartIcon="@Icons.Material.Filled.PlayArrow"
+                                   OnClick="StartGame"
+                                   Disabled="@(players.Count < 2 || isStarting)">
+                            @(isStarting ? "Starting..." : $"Start Game ({players.Count} players)")
+                        </MudButton>
+                    }
+                    else
+                    {
+                        <MudAlert Severity="Severity.Info" Class="mt-4">
+                            Waiting for host to start the game...
+                        </MudAlert>
+                    }
+                }
+                else
+                {
+                    <MudProgressCircular Indeterminate="true" />
+                    <MudText>Loading session...</MudText>
+                }
+
+                <MudDivider Class="my-4" />
+                
+                <MudButton Variant="Variant.Outlined" 
+                           Color="Color.Error"
+                           StartIcon="@Icons.Material.Filled.ExitToApp"
+                           OnClick="LeaveLobby">
+                    Leave Lobby
+                </MudButton>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Chat/Info Panel -->
+        <MudItem xs="12" md="4">
+            <MudPaper Elevation="3" Class="pa-6" Style="height: 100%;">
+                <MudText Typo="Typo.h6" Class="mb-3">📡 Connection Info</MudText>
+                
+                @if (currentSession != null)
+                {
+                    <MudList T="string" Dense="true">
+                        <MudListItem T="string">
+                            <MudText Typo="Typo.caption">Network Type</MudText>
+                            <MudText Typo="Typo.body2">@currentSession.NetworkType</MudText>
+                        </MudListItem>
+                        <MudListItem T="string">
+                            <MudText Typo="Typo.caption">Session ID</MudText>
+                            <MudText Typo="Typo.body2" Style="word-break: break-all;">
+                                @currentSession.SessionId.Substring(0, 16)...
+                            </MudText>
+                        </MudListItem>
+                        <MudListItem T="string">
+                            <MudText Typo="Typo.caption">Connection State</MudText>
+                            <MudChip T="string" Size="Size.Small" Color="Color.Success">Connected</MudChip>
+                        </MudListItem>
+                    </MudList>
+
+                    @if (isHost)
+                    {
+                        <MudDivider Class="my-3" />
+                        <MudText Typo="Typo.body2" Class="mb-2">Share this code:</MudText>
+                        <MudTextField Value="@currentSession.SessionId.Substring(0, 8).ToUpper()" 
+                                      ReadOnly="true"
+                                      Variant="Variant.Outlined"
+                                      Adornment="Adornment.End"
+                                      AdornmentIcon="@Icons.Material.Filled.ContentCopy"
+                                      OnAdornmentClick="CopySessionCode" />
+                    }
+                }
+
+                <MudDivider Class="my-4" />
+                
+                <MudText Typo="Typo.h6" Class="mb-3">📋 How to Play</MudText>
+                <MudText Typo="Typo.body2" Class="mb-2">
+                    <strong>Classic Mode:</strong> Complete your scorecard to get the highest score.
+                </MudText>
+                <MudText Typo="Typo.body2">
+                    <strong>Tournament:</strong> Compete in brackets to become the champion!
+                </MudText>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+@code {
+    [Parameter]
+    public string SessionId { get; set; } = "";
+
+    private GameSession? currentSession;
+    private List<Player> players = new();
+    private bool isHost = false;
+    private string localPlayerId = "";
+    private int maxPlayers = 4;
+    
+    private GameMode gameMode = GameMode.Classic;
+    private int roundsCount = 1;
+    private bool isStarting = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // Subscribe to network events
+            NetworkService.MessageReceived += OnNetworkMessage;
+            NetworkService.PeerConnected += OnPeerConnected;
+            NetworkService.PeerDisconnected += OnPeerDisconnected;
+
+            // Get current session
+            currentSession = await NetworkService.GetCurrentSessionAsync();
+            
+            if (currentSession == null || currentSession.SessionId != SessionId)
+            {
+                // Try to join the session
+                await NetworkService.JoinSessionAsync(SessionId);
+                currentSession = await NetworkService.GetCurrentSessionAsync();
+            }
+
+            if (currentSession != null)
+            {
+                isHost = currentSession.IsHost;
+                localPlayerId = currentSession.LocalPeerId;
+                
+                // Request current player list from host
+                if (!isHost)
+                {
+                    await RequestPlayerList();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowSnackbar($"Error: {ex.Message}", Severity.Error);
+            Navigation.NavigateTo("/session-browser");
+        }
+    }
+
+    private void OnNetworkMessage(object? sender, NetworkMessage message)
+    {
+        switch (message)
+        {
+            case PlayerJoinedMessage joinMsg:
+                _ = HandlePlayerJoined(joinMsg);
+                break;
+            case PlayerLeftMessage leftMsg:
+                _ = HandlePlayerLeft(leftMsg);
+                break;
+            case GameStartMessage startMsg:
+                _ = HandleGameStart(startMsg);
+                break;
+            case PlayerListMessage listMsg:
+                _ = HandlePlayerList(listMsg);
+                break;
+        }
+    }
+
+    private Task HandlePlayerJoined(PlayerJoinedMessage message)
+    {
+        var player = new Player { Id = Guid.Parse(message.PlayerId), Name = message.PlayerName };
+        if (!players.Any(p => p.Id == player.Id))
+        {
+            players.Add(player);
+            ShowSnackbar($"{message.PlayerName} joined the lobby", Severity.Info);
+            InvokeAsync(StateHasChanged);
+        }
+        return Task.CompletedTask;
+    }
+
+    private Task HandlePlayerLeft(PlayerLeftMessage message)
+    {
+        var player = players.FirstOrDefault(p => p.Id.ToString() == message.PlayerId);
+        if (player != null)
+        {
+            players.Remove(player);
+            ShowSnackbar($"{player.Name} left the lobby", Severity.Warning);
+            InvokeAsync(StateHasChanged);
+        }
+        return Task.CompletedTask;
+    }
+
+    private Task HandleGameStart(GameStartMessage message)
+    {
+        // Navigate to game
+        Navigation.NavigateTo($"/multiplayer-game/{SessionId}");
+        return Task.CompletedTask;
+    }
+
+    private Task HandlePlayerList(PlayerListMessage message)
+    {
+        players.Clear();
+        foreach (var playerId in message.PlayerIds)
+        {
+            // In a real implementation, you'd need player names too
+            players.Add(new Player { Id = Guid.Parse(playerId), Name = $"Player {players.Count + 1}" });
+        }
+        InvokeAsync(StateHasChanged);
+        return Task.CompletedTask;
+    }
+
+    private void OnPeerConnected(object? sender, PeerInfo peer)
+    {
+        ShowSnackbar($"{peer.DisplayName} connected", Severity.Success);
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void OnPeerDisconnected(object? sender, PeerInfo peer)
+    {
+        ShowSnackbar($"{peer.DisplayName} disconnected", Severity.Warning);
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task StartGame()
+    {
+        if (!isHost || players.Count < 2 || isStarting)
+            return;
+
+        isStarting = true;
+        try
+        {
+            // Send game start message to all players
+            var startMessage = new GameStartMessage
+            {
+                SenderId = localPlayerId,
+                GameMode = gameMode,
+                PlayerIds = players.Select(p => p.Id.ToString()).ToList()
+            };
+
+            await NetworkService.SendMessageAsync(startMessage);
+            
+            // Navigate to game
+            Navigation.NavigateTo($"/multiplayer-game/{SessionId}");
+        }
+        catch (Exception ex)
+        {
+            ShowSnackbar($"Failed to start game: {ex.Message}", Severity.Error);
+            isStarting = false;
+        }
+    }
+
+    private async Task RequestPlayerList()
+    {
+        if (currentSession == null) return;
+
+        var request = new PlayerListRequestMessage
+        {
+            SenderId = localPlayerId
+        };
+
+        await NetworkService.SendMessageAsync(request, currentSession.HostId);
+    }
+
+    private async Task LeaveLobby()
+    {
+        try
+        {
+            await NetworkService.LeaveSessionAsync();
+            Navigation.NavigateTo("/session-browser");
+        }
+        catch (Exception ex)
+        {
+            ShowSnackbar($"Error leaving lobby: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task CopySessionCode()
+    {
+        if (currentSession != null)
+        {
+            // In a real app, you'd use JS interop to copy to clipboard
+            ShowSnackbar("Session code copied!", Severity.Success);
+        }
+    }
+
+    private void ShowSnackbar(string message, Severity severity)
+    {
+        Snackbar.Add(message, severity);
+    }
+
+    public void Dispose()
+    {
+        NetworkService.MessageReceived -= OnNetworkMessage;
+        NetworkService.PeerConnected -= OnPeerConnected;
+        NetworkService.PeerDisconnected -= OnPeerDisconnected;
+    }
+}

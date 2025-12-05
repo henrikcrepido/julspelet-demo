@@ -25,6 +25,12 @@ public class SocketNetworkService : INetworkService
     public event EventHandler<PeerInfo>? PeerDisconnected;
     public event EventHandler<ConnectionState>? ConnectionStateChanged;
 
+    public Task InitializeAsync()
+    {
+        // Socket initialization happens in StartAsync
+        return Task.CompletedTask;
+    }
+
     public Task<List<GameSession>> DiscoverSessionsAsync(int timeoutSeconds = 5)
     {
         // TODO: Implement UDP multicast/broadcast discovery
@@ -36,7 +42,7 @@ public class SocketNetworkService : INetworkService
         return Task.FromResult(new List<GameSession>());
     }
 
-    public Task<GameSession> CreateSessionAsync(string sessionName, int maxPlayers = 6, string? password = null)
+    public Task<GameSession> CreateSessionAsync(string hostName, int maxPlayers, NetworkType networkType)
     {
         // TODO: Implement TCP server socket
         // Start listening on a port
@@ -45,19 +51,27 @@ public class SocketNetworkService : INetworkService
         _currentSession = new GameSession
         {
             SessionId = Guid.NewGuid().ToString(),
-            SessionName = sessionName,
+            SessionName = $"{hostName}'s Game",
             HostId = PeerId,
-            HostName = sessionName,
+            HostName = hostName,
             MaxPlayers = maxPlayers,
-            Password = password,
-            NetworkType = NetworkType.Local,
-            ConnectionInfo = $"0.0.0.0:0" // TODO: Set actual IP and port
+            NetworkType = networkType,
+            ConnectionInfo = $"0.0.0.0:0", // TODO: Set actual IP and port
+            LocalPeerId = PeerId,
+            IsHost = true
         };
 
         IsHost = true;
         SetConnectionState(ConnectionState.Connected);
 
         return Task.FromResult(_currentSession);
+    }
+
+    public Task JoinSessionAsync(string sessionId)
+    {
+        // TODO: Implement joining by session ID
+        // This would typically involve discovering the session first
+        throw new NotImplementedException("Session discovery required for socket-based joining");
     }
 
     public Task JoinSessionAsync(GameSession session, string playerName, string? password = null)
@@ -97,7 +111,7 @@ public class SocketNetworkService : INetworkService
         return Task.CompletedTask;
     }
 
-    public Task SendMessageToAsync(string peerId, NetworkMessage message)
+    public Task SendMessageAsync(NetworkMessage message, string peerId)
     {
         // TODO: Send message to specific peer via TCP
         message.SenderId = PeerId;
@@ -111,9 +125,9 @@ public class SocketNetworkService : INetworkService
         return new List<PeerInfo>(_connectedPeers);
     }
 
-    public GameSession? GetCurrentSession()
+    public Task<GameSession?> GetCurrentSessionAsync()
     {
-        return _currentSession;
+        return Task.FromResult(_currentSession);
     }
 
     public Task StartAsync()

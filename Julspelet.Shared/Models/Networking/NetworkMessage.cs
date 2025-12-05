@@ -16,6 +16,8 @@ namespace Julspelet.Shared.Models.Networking;
 [JsonDerivedType(typeof(GameEndMessage), typeDiscriminator: "game_end")]
 [JsonDerivedType(typeof(ChatMessage), typeDiscriminator: "chat")]
 [JsonDerivedType(typeof(HeartbeatMessage), typeDiscriminator: "heartbeat")]
+[JsonDerivedType(typeof(PlayerListMessage), typeDiscriminator: "player_list")]
+[JsonDerivedType(typeof(PlayerListRequestMessage), typeDiscriminator: "player_list_request")]
 public abstract class NetworkMessage
 {
     /// <summary>
@@ -102,7 +104,8 @@ public class TurnChangeMessage : NetworkMessage
 public class GameStartMessage : NetworkMessage
 {
     public List<string> PlayerOrder { get; set; } = new();
-    public string GameMode { get; set; } = string.Empty;
+    public List<string> PlayerIds { get; set; } = new();
+    public GameMode GameMode { get; set; }
 }
 
 /// <summary>
@@ -129,4 +132,20 @@ public class ChatMessage : NetworkMessage
 public class HeartbeatMessage : NetworkMessage
 {
     public int PeersConnected { get; set; }
+}
+
+/// <summary>
+/// Message containing the list of all players in the session.
+/// </summary>
+public class PlayerListMessage : NetworkMessage
+{
+    public List<string> PlayerIds { get; set; } = new();
+    public List<string> PlayerNames { get; set; } = new();
+}
+
+/// <summary>
+/// Message requesting the current player list from the host.
+/// </summary>
+public class PlayerListRequestMessage : NetworkMessage
+{
 }

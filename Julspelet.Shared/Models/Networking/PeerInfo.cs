@@ -16,6 +16,11 @@ public class PeerInfo
     public string PlayerName { get; set; } = string.Empty;
 
     /// <summary>
+    /// Display name for UI (defaults to PlayerName).
+    /// </summary>
+    public string DisplayName => string.IsNullOrWhiteSpace(PlayerName) ? PeerId.Substring(0, 8) : PlayerName;
+
+    /// <summary>
     /// Connection endpoint (IP address, SignalR connection ID, etc.).
     /// </summary>
     public string ConnectionEndpoint { get; set; } = string.Empty;
