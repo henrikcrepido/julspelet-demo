@@ -12,6 +12,7 @@
     <PackageReference Include="MudBlazor" Version="8.15.0" />
     <PackageReference Include="NUnit" Version="4.4.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="5.2.0" />
+    <PackageReference Include="QRCoder" Version="1.7.0" />
   </ItemGroup>
 
 </Project>

@@ -1,4 +1,5 @@
 @page "/tournament-lobby"
+@page "/tournament-lobby/{tournamentId}"
 @using Julspelet.Models
 @using Julspelet.Services
 @inject TournamentService TournamentService
@@ -189,6 +190,9 @@
 }
 
 @code {
+    [Parameter]
+    public string? TournamentId { get; set; }
+
     private List<Tournament> _availableTournaments = new();
     private List<Tournament> _activeTournaments = new();
     private string _errorMessage = "";
@@ -218,6 +222,32 @@
                 StateHasChanged();
             });
         }, null, TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(3));
+    }
+
+    /// <summary>
+    /// Called when route parameters are set or changed.
+    /// If a tournament ID is provided in the URL, automatically show the join dialog.
+    /// This enables direct joining via QR code or shared link.
+    /// </summary>
+    protected override void OnParametersSet()
+    {
+        if (!string.IsNullOrEmpty(TournamentId))
+        {
+            // Find the tournament and show join dialog
+            var tournament = TournamentService.GetTournament(TournamentId);
+            if (tournament != null && tournament.IsAcceptingPlayers)
+            {
+                ShowJoinDialog(tournament);
+            }
+            else if (tournament != null)
+            {
+                _errorMessage = "This tournament is no longer accepting players.";
+            }
+            else
+            {
+                _errorMessage = "Tournament not found.";
+            }
+        }
     }
 
     private void LoadTournaments()

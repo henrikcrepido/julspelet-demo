@@ -1,8 +1,11 @@
 @page "/manage-tournament/{tournamentId}"
 @using Julspelet.Models
 @using Julspelet.Services
+@using QRCoder
+@using System.IO
 @inject TournamentService TournamentService
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
 @implements IDisposable
 
 <PageTitle>Manage Tournament - Julspelet</PageTitle>
@@ -61,13 +64,43 @@ else
 
                 <MudDivider Class="my-4" />
 
-                <MudText Typo="Typo.body2" Color="Color.Info" Class="mb-2">
-                    Share this tournament ID with players: <strong>@_tournament.Id</strong>
-                </MudText>
-                
-                <MudText Typo="Typo.body2" Color="Color.Info" Class="mb-4">
-                    Players can join at: <strong>/tournament-lobby</strong>
-                </MudText>
+                <!-- QR Code and Shareable Link Section -->
+                <MudPaper Elevation="1" Class="pa-4 mb-4" Style="background: linear-gradient(135deg, #fffacd 0%, #fff8dc 100%); border: 2px dashed #2d5a2f;">
+                    <MudText Typo="Typo.h6" Color="Color.Primary" Align="Align.Center" Class="mb-3">
+                        📱 Scan to Join Tournament 📱
+                    </MudText>
+                    
+                    <div style="text-align: center; margin-bottom: 16px;">
+                        @if (!string.IsNullOrEmpty(_qrCodeBase64))
+                        {
+                            <img src="@_qrCodeBase64" alt="QR Code" style="max-width: 250px; border: 4px solid white; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.2);" />
+                        }
+                    </div>
+                    
+                    <MudText Typo="Typo.body2" Color="Color.Info" Align="Align.Center" Class="mb-2">
+                        <strong>Or share this link:</strong>
+                    </MudText>
+                    
+                    <MudTextField @bind-Value="_joinUrl" 
+                                  ReadOnly="true" 
+                                  Variant="Variant.Outlined"
+                                  Adornment="Adornment.End"
+                                  AdornmentIcon="@Icons.Material.Filled.ContentCopy"
+                                  OnAdornmentClick="CopyJoinUrlToClipboard"
+                                  Class="mb-2"
+                                  Style="background-color: white;" />
+                    
+                    @if (_showCopyMessage)
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Success" Align="Align.Center">
+                            ✅ Link copied to clipboard!
+                        </MudText>
+                    }
+                    
+                    <MudText Typo="Typo.caption" Color="Color.Info" Align="Align.Center" Class="mt-2">
+                        Players can scan the QR code or click the link to join instantly!
+                    </MudText>
+                </MudPaper>
 
                 @if (_tournament.CanStart)
                 {
@@ -204,6 +237,9 @@ else
     private Tournament? _tournament;
     private string _statusMessage = "";
     private System.Threading.Timer? _refreshTimer;
+    private string _qrCodeBase64 = "";
+    private string _joinUrl = "";
+    private bool _showCopyMessage = false;
 
     protected override void OnInitialized()
     {
@@ -235,6 +271,54 @@ else
         if (!string.IsNullOrEmpty(TournamentId))
         {
             _tournament = TournamentService.GetTournament(TournamentId);
+            GenerateQrCode();
+        }
+    }
+
+    /// <summary>
+    /// Generates a QR code for the tournament join URL.
+    /// Uses QRCoder library to create a PNG image encoded as base64.
+    /// </summary>
+    private void GenerateQrCode()
+    {
+        if (_tournament == null) return;
+        
+        // Get the base URL from NavigationManager and create the join URL
+        var baseUri = NavigationManager.BaseUri;
+        _joinUrl = $"{baseUri}tournament-lobby/{_tournament.Id}";
+        
+        // Generate QR code using QRCoder library
+        using (var qrGenerator = new QRCodeGenerator())
+        {
+            var qrCodeData = qrGenerator.CreateQrCode(_joinUrl, QRCodeGenerator.ECCLevel.Q);
+            using (var qrCode = new PngByteQRCode(qrCodeData))
+            {
+                var qrCodeBytes = qrCode.GetGraphic(20);
+                _qrCodeBase64 = $"data:image/png;base64,{Convert.ToBase64String(qrCodeBytes)}";
+            }
+        }
+    }
+
+    /// <summary>
+    /// Copies the join URL to the clipboard using JavaScript interop.
+    /// Shows a temporary success message to the user.
+    /// </summary>
+    private async Task CopyJoinUrlToClipboard()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", _joinUrl);
+            _showCopyMessage = true;
+            StateHasChanged();
+            
+            // Hide the message after 3 seconds
+            await Task.Delay(3000);
+            _showCopyMessage = false;
+            StateHasChanged();
+        }
+        catch
+        {
+            // Clipboard API might not be available in some contexts
         }
     }
 
