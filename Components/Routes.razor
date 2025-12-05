@@ -1,6 +1,6 @@
 ﻿@using Julspelet.Shared.Components.Layout
 
-<Router AppAssembly="typeof(Program).Assembly" AdditionalAssemblies="new[] { typeof(Julspelet.Shared._Imports).Assembly }">
+<Router AppAssembly="typeof(Julspelet.Shared._Imports).Assembly">
     <Found Context="routeData">
         <RouteView RouteData="routeData" DefaultLayout="typeof(MainLayout)" />
         <FocusOnNavigate RouteData="routeData" Selector="h1" />

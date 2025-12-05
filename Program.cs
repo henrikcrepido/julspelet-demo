@@ -1,5 +1,7 @@
 using Julspelet.Components;
 using Julspelet.Shared.Services;
+using Julspelet.Shared.Services.Networking;
+using Julspelet.Hubs;
 using MudBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,12 +13,20 @@ builder.Services.AddRazorComponents()
 // Add MudBlazor services
 builder.Services.AddMudServices();
 
+// Add SignalR for multiplayer networking
+builder.Services.AddSignalR();
+
 // Add game services
 // Using Singleton for TournamentService to share state across all connections
 // Using Scoped lifetime for Blazor Server to maintain state per user connection
 builder.Services.AddSingleton<TournamentService>();
 builder.Services.AddScoped<ScoringService>();
 builder.Services.AddScoped<GameService>();
+
+// Add networking services for multiplayer
+// SignalRNetworkService for web-based P2P networking
+builder.Services.AddScoped<INetworkService, SignalRNetworkService>();
+builder.Services.AddScoped<IGameSyncService, GameSyncService>();
 
 var app = builder.Build();
 
@@ -35,5 +45,8 @@ app.UseAntiforgery();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+// Map SignalR hub for multiplayer game sessions
+app.MapHub<GameHub>("/gamehub");
 
 app.Run();
