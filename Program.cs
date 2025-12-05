@@ -1,5 +1,5 @@
 using Julspelet.Components;
-using Julspelet.Services;
+using Julspelet.Shared.Services;
 using MudBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);

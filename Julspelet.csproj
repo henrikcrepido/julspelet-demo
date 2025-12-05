@@ -15,4 +15,16 @@
     <PackageReference Include="QRCoder" Version="1.7.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="Julspelet.Shared\Julspelet.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Exclude MAUI project files from web project compilation -->
+    <Compile Remove="Julspelet.Maui\**" />
+    <Content Remove="Julspelet.Maui\**" />
+    <EmbeddedResource Remove="Julspelet.Maui\**" />
+    <None Remove="Julspelet.Maui\**" />
+  </ItemGroup>
+
 </Project>

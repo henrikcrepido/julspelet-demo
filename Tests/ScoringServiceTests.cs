@@ -1,6 +1,6 @@
 using NUnit.Framework;
-using Julspelet.Models;
-using Julspelet.Services;
+using Julspelet.Shared.Models;
+using Julspelet.Shared.Services;
 
 namespace Julspelet.Tests;
 
