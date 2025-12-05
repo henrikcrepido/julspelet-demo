@@ -12,15 +12,26 @@ The application uses a multi-layered testing approach:
 - **Files**: `Tests/ScoringServiceTests.cs`
 - **Status**: 28 tests, all passing
 
-### 2. Component Tests (Recommended - Advanced)
+### 2. Integration Tests ✅ (Implemented)
+- **Framework**: NUnit
+- **Coverage**: Game service integration, multiplayer networking
+- **Files**: `Tests/GameServiceIntegrationTests.cs`, `Tests/MultiplayerIntegrationTests.cs`
+- **Status**: 28 tests, all passing
+
+### 3. Component Tests (Recommended - Advanced)
 - **Framework**: bUnit
 - **Purpose**: Test Blazor components in isolation
 - **Complexity**: High (requires mocking JSInterop, MudBlazor, and navigation)
 
-### 3. End-to-End Tests (Recommended)
+### 4. End-to-End Tests (Recommended)
 - **Framework**: Playwright or Selenium
 - **Purpose**: Test complete user workflows
 - **Complexity**: Medium
+
+### 5. Multiplayer Testing ✅ (Documented)
+- **Coverage**: SignalR web multiplayer, MAUI P2P, cross-platform scenarios
+- **Documentation**: `Tests/MULTIPLAYER-TESTING.md`
+- **Status**: Manual testing guide with comprehensive test scenarios
 
 ## Current Test Coverage
 
@@ -32,8 +43,28 @@ All Yatzy scoring rules are thoroughly tested:
 - Bonus calculations
 
 ```bash
-dotnet test
+dotnet test --filter "FullyQualifiedName~ScoringServiceTests"
 # Result: 28/28 tests passing
+```
+
+### ✅ Integration Tests (Game Logic & Networking)
+Game service and multiplayer networking thoroughly tested:
+- Game initialization and player management
+- Dice rolling and turn progression
+- Score selection and game flow
+- Network message serialization/deserialization
+- Message authentication and validation
+- Anti-cheat protection and rate limiting
+
+```bash
+dotnet test --filter "FullyQualifiedName~GameServiceIntegrationTests|FullyQualifiedName~MultiplayerIntegrationTests"
+# Result: 28/28 tests passing
+```
+
+### Total Automated Test Coverage
+```bash
+dotnet test
+# Result: 56/56 tests passing
 ```
 
 ## Recommended Approach: End-to-End Testing with Playwright
