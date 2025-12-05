@@ -9,8 +9,8 @@
     <!-- This allows us to use the same Razor components from our Blazor Server app -->
     <BlazorWebView x:Name="blazorWebView" HostPage="wwwroot/index.html">
         <BlazorWebView.RootComponents>
-            <!-- Mount the App component from the shared library -->
-            <RootComponent Selector="#app" ComponentType="{x:Type local:Components.App}" />
+            <!-- Mount the Routes component which loads shared components -->
+            <RootComponent Selector="#app" ComponentType="{x:Type local:Components.Routes}" />
         </BlazorWebView.RootComponents>
     </BlazorWebView>
 
